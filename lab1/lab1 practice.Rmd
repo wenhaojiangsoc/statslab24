@@ -1,0 +1,66 @@
+---
+title: "Demonstration of R Markdown"
+author: "Wenhao Jiang"
+date: "2024-09-06"
+output: pdf_document
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+You will need to create R Markdown files to submit assignments. 
+
+* You can combine both **text** and **codes** in a single Markdown file.
+* Lab materials can be found from [my github page](https://github.com/wenhaojiangsoc/statslab).
+
+You can change line by adding `two spaces`, or typing `\`, or adding `<br>`, at the end of the first line.
+
+### Typing Equations
+
+You can type equations in Markdown using a LaTeX-style syntax.<br>  
+For example, the sample mean (statistic) is given by $\hat{\mu} = \frac{\sum_{i = 1}^{n}y_i}{n}$\
+You can also type the equation in a separate line by having two `$$` at the beginning and the end of the equation. This makes equations more clear.
+$$
+\hat{\mu} = \frac{\sum_{i = 1}^{n}y_i}{n}
+$$
+Notations and syntax can be strange at the beginning. You will get used to it gradually. You can refer to this [page](https://rpruim.github.io/s341/S19/from-class/MathinRmd.html) for more information.
+
+### Integrating Codes
+
+```{r}
+## your codes
+
+```
+
+```{r install packages, message=FALSE, eval=FALSE}
+## install package individually
+install.packages("tidyverse")
+
+## or install multiple packages together
+install.packages(c("tidyverse", "gridExtra", "kableExtra"))
+```
+
+```{r load packages, message=FALSE}
+## load packages
+library(tidyverse)
+library(gridExtra)
+library(kableExtra)
+```
+
+```{r data types, message=FALSE}
+
+```
+
+```{r clean and summarize data, message=FALSE}
+
+```
+
+```{r misc, message=FALSE}
+
+```
+
+
