@@ -12,4 +12,4 @@ Office Hours: Tuesday 2PM-4PM [here if meet on Zoom](https://nyu.zoom.us/my/wenh
 + Download the lab or assignment folder from the link: https://download-directory.github.io/. You will need to **copy and paste the link of the folder after you click the target folder**. For example, lab 1 link is: https://github.com/wenhaojiangsoc/statslab24/tree/main/lab1
 
 ### Lab 2 Visualization and Sampling Simulation (9/13/2023)
-Lab 2 covers basic visualizations in `R` using the standard package `ggplot2`. We will use the package to simulate the sampling process and visualize some properties for the sampling distribution.
++ Lab 2 covers basic visualizations in `R` using the standard package `ggplot2`. We will use the package to simulate the sampling process and visualize some properties for the sampling distribution.
