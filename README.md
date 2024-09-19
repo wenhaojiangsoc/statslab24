@@ -16,3 +16,7 @@ Office Hours: Tuesday 2PM-4PM [here if meet on Zoom](https://nyu.zoom.us/my/wenh
 
 ### Problem Set 1 (Due 9/30/2024)
 + Please knit `ps1_problems.Rmd` in the `ps1` folder to convert the problem set to either a PDF or html file. Please submit a PDF file if you can, and only submit a html file if PDF is not possible. Please pay attention to the instructions of the assignment.
+
+### Lab 3 Hypothesis Testing, Two Sample Means, and Overleaf (9/20/2024)
++ Lab 3 covers the R implementation of hypothesis testing, the comparison of two sample means, and an introduction to Overleaf.
++ An Overleaf template for your final project and for your future use as a baseline can be found [here](https://www.overleaf.com/8539929553qtggbbwwpbvq). **Please do not edit it**; instead, select it and copy it to **your own archive** for your future use.
