@@ -1,0 +1,7 @@
+"0","# Load ipums data"
+"0","ddi <- read_ipums_ddi(""data/usa_00043.xml"")"
+"0","data <- read_ipums_micro(ddi)"
+"2","Use of data from IPUMS USA is subject to conditions including that users should cite the data appropriately. Use command `ipums_conditions()` for more details.
+"
+"0","# View first 10 rows"
+"0","head(data, n = 10) %>% kbl(""html"") %>% kable_classic_2(full_width = T)"

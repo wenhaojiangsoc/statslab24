@@ -1,0 +1,6 @@
+"0",""
+"0","## beta 1"
+"0","beta1 <- sum((x-mean(x))*(y-mean(y)))/sum((x-mean(x))^2)"
+"0",""
+"0","## beta 0"
+"0","beta0 <- mean(y) - beta1*mean(x)"

@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1632503057982.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "760512439",
+    "id" : "DC6A4A0F",
+    "lastKnownWriteTime" : 1632456547,
+    "last_content_update" : 1632456547,
+    "path" : "~/google_drive_nyu/r_and_git/intro_to_stats_f2021/lab4/Lab4_exercise_solution.Rmd",
+    "project_path" : "Lab4_exercise_solution.Rmd",
+    "properties" : {
+        "cursorPosition" : "97,0",
+        "ignored_words" : "css,blockquote,px,br,dataframe,covariance\n",
+        "last_setup_crc32" : "",
+        "scrollLine" : "0",
+        "source_window_id" : "",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

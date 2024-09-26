@@ -1,0 +1,9 @@
+"0","# Create a new variable called ""unique_id""
+data_clean <- data_clean %>%
+  unite(""unique_id"",                # The name of the new column, as a string or symbol
+        SAMPLE, SERIAL, PERNUM,     # Columns to unite
+        sep = """",                   # Separator to use between values
+        remove = TRUE)              # Remove input columns from output data frame
+"
+"2","Error: object 'data_clean' not found
+"
