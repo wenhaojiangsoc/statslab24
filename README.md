@@ -18,5 +18,8 @@ Office Hours: Tuesday 2PM-4PM [here if meet on Zoom](https://nyu.zoom.us/my/wenh
 + Please knit `ps1_problems.Rmd` in the `ps1` folder to convert the problem set to either a PDF or html file. Please submit a PDF file if you can, and only submit a html file if PDF is not possible. Please pay attention to the instructions of the assignment.
 
 ### Lab 3 Hypothesis Testing, Two Sample Means, and Overleaf (9/20/2024)
-+ Lab 3 covers the R implementation of hypothesis testing, the comparison of two sample means, and an introduction to Overleaf.
++ Lab 3 covers the `R` implementation of hypothesis testing, the comparison of two sample means, and an introduction to Overleaf.
 + An Overleaf template for your final project and for your future use as a baseline can be found [here](https://www.overleaf.com/8539929553qtggbbwwpbvq). **Please do not edit it**; instead, select it and copy it to **your own archive** for your future use.
+
+### Lab 4 Bivariate OLS Regression, Download Data from IPUMS (9/27/2024)
++ Lab 4 covers the `R` implementation of basic bivariate OLS regression and an introduction to IPUMS and data extraction.
