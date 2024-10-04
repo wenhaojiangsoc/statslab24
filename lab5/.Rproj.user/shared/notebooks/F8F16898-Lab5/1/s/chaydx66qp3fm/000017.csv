@@ -1,0 +1,6 @@
+"0","plot(df$y, mod1$residuals)
+abline(h = 0, col=""red"")
+## Residual vs. fitted y
+plot(mod1$fitted.values, mod1$residuals)
+"
+"0","abline(h = 0, col=""red"")"

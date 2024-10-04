@@ -1,0 +1,24 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1614960041708.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3506141746",
+    "id" : "87D1224A",
+    "lastKnownWriteTime" : 1614969034,
+    "last_content_update" : 1614969035004,
+    "path" : "~/google_drive_nyu/r_and_git/intro_to_stats_2021/Lab5/Lab5_solution.Rmd",
+    "project_path" : "Lab5_solution.Rmd",
+    "properties" : {
+        "cursorPosition" : "217,70",
+        "last_setup_crc32" : "",
+        "scrollLine" : "0",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

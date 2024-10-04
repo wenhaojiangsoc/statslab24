@@ -1,0 +1,29 @@
+"0","knitr::opts_chunk$set(echo = TRUE)"
+"0",""
+"0","library(pacman)"
+"0","p_load(tidyverse, psych, gridExtra, foreign, stargazer, ggcorrplot, kableExtra)"
+"2","Warning:"
+"2"," unable to access index for repository http://www.stats.ox.ac.uk/pub/RWin/bin/windows/contrib/4.1:
+  cannot open URL 'http://www.stats.ox.ac.uk/pub/RWin/bin/windows/contrib/4.1/PACKAGES'
+"
+"2","trying URL 'https://cran.rstudio.com/bin/windows/contrib/4.1/gridExtra_2.3.zip'
+"
+"2","Content type 'application/zip'"
+"2"," length 1109408 bytes (1.1 MB)
+"
+"2","downloaded 1.1 MB
+
+"
+"1","package ‘gridExtra’ successfully unpacked and MD5 sums checked
+"
+"1","
+"
+"1",""
+"1","The downloaded binary packages are in
+	C:\Users\di-zh\AppData\Local\Temp\RtmpioI2Zt\downloaded_packages"
+"1",""
+"1","
+"
+"2","
+gridExtra installed
+"

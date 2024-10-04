@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1614912494373.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2329864581",
+    "id" : "B18B05E4",
+    "lastKnownWriteTime" : 1614924177,
+    "last_content_update" : 1614924177387,
+    "path" : "~/google_drive_nyu/r_and_git/intro_to_stats_2021/Lab5/Lab5.Rmd",
+    "project_path" : "Lab5.Rmd",
+    "properties" : {
+        "cursorPosition" : "253,3",
+        "ignored_words" : "sd,https,wikipedia,LaTeX,dataframe,scatterplot,recode,scatterplots,Recode,edu,css,blockquote,px,br,ps,th,variabilities,multicollinearity,pre\n",
+        "last_setup_crc32" : "",
+        "scrollLine" : "240",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 7,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

@@ -1,0 +1,413 @@
+---
+title: "SOC-GA 2332 Intro to Stats Lab 5"
+author: "Di Zhou"
+date: "10/01/2021"
+output:
+  html_document:
+    df_print: paged
+    theme: paper
+    highlight: textmate
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+    toc_depth: 3
+    number_sections: false
+  pdf_document: 
+    toc: true
+---
+
+
+<style type="text/css">
+
+body{ 
+
+    font-size: 16px;
+    line-height: 1.7em;
+    <!-- text-align: justify; -->
+
+}
+
+blockquote {
+    padding: 10px 20px;
+    margin: 0 0 20px;
+    font-size: 16px;
+    border: solid 1px;
+}
+
+h1 { font-size: 32px; }
+
+h2 { font-size: 24px; }
+
+h3 { font-size: 20px; }
+
+</style>
+
+<br>
+
+---
+
+## Logistics & Announcement
+
+- **Problem Set 2** will be posted on Brightspace on Monday, Oct. 4th.
+- Structure of the lab: 
+  + Bring at least one question you have about this week's lecture to the lab
+
+---
+
+First, load packages to your environment. Today we will use several new packages. Please install them before you run the following chunks.
+
+
+```{r setup, include=T}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(pacman)
+p_load(tidyverse, psych, gridExtra, foreign, stargazer, ggcorrplot, kableExtra)
+
+```
+
+## Part 1: Data Simulation and How to Simulate Regressions
+
+Data simulation is the opposite of data analysis. You create a data set through simulation and then "understand" it using the analytically tools you learned. 
+
+### Advantages for doing data simulation  
+  
+  1. *The truth is known*: We know the values of simulated parameters, and we can therefore compare them with the model estimates. This gives us a better understanding of how well the model performs.  
+  
+  2. *Understanding parameters through tuning*: Sometimes the effect of one or more parameters is unclear. Being able to tune the parameters and observe how they affect the resultant data helps us better understand the parameters.   
+  3. *Evaluating the bias and efficiency of statistics*: As we have practiced in PS1, by simulating a virtual population, we can directly observe how the sampling procedure affects the variability of the sample statistics. In general, through simulation, we can generate sampling distribution of any statistics we are interested in, and evaluate their bias and efficiency.  
+  
+  4. *Understanding models*: Finally, data simulation provides proof that you understand a model: If you can simulate data under a certain model, then it is likely that you really understand that model. 
+
+
+### Simulation from a stochastic process
+
+For a social system, we always take into account the randomness in social life when we simulate data. In other words, the data is generated from a **stochastic process** in which the state of the system cannot be precisely predicted given its current state and even with a full knowledge of all the factors affecting that process.  
+
+In concrete, it means that we always include an error/residual term when simulating a social process. This error/residual term conveys the unpredictability and randomness of social lives. 
+
+### Simulate a bivariate relationship
+  
+  For example, let's simulate a data in which the *years of education* affect one's *income rank* according to the following equation: 
+$$\text{Income_Rank} = 10 + 6 \cdot \text{Edu_Year } + \epsilon$$  
+  
+  We will first simulate *years of education* -the independent variable (IV), then *income rank* -the dependent variable (DV) according to the above equation.  
+  
+  We simulate years of education using `rpois()`, a function that generates a random Poisson distribution with a specified parameter $\lambda$. You can learn more about the distribution [here](https://en.wikipedia.org/wiki/Poisson_distribution).  
+  
+```{r part1-simulateIV, fig.align = "center"}
+# Simulate IV (edu level)
+set.seed(1234)
+edu <- rpois(300, lambda = 6) #rpois: Random Poisson Distribution with parameter lamda 
+
+# Plot histogram of IV
+edu %>% 
+  as_tibble() %>%
+  ggplot(aes(value)) +
+  geom_histogram(color = "black", fill = "grey", binwidth = 1) +
+  labs(x = "Years of Edu")
+
+# Summary statistics
+summary(edu)
+
+```
+  
+  When simulating earning, since we are simulating a stochastic process, we always add an error term, noted as $\epsilon$ in the above equation. Note that normally this error term is modeled using `rnorm()` assuming **the error term is normally distributed with a mean of 0 and a sd that is a constant value**, so that the errors vary following the same random pattern across all values of the IV. But we might need to change this when we want to simulate data that **violate the homoskedasticity assumption**, which means the error term is not purely random but dependent on the value of the IV. 
+
+```{r part1-simulateDV, fig.align = "center"}
+
+# Simulate DV 
+set.seed(1234)
+earn <- 10 + 6*edu + rnorm(300, 0, 10) # add a random error using rnorm() 
+
+# Plot histogram of DV
+earn %>% 
+  as_tibble() %>%
+  ggplot(aes(value)) +
+  geom_histogram(color = "black", fill = "grey", binwidth = 5) +
+  labs(x = "Income Rank")
+
+# Summary statistics
+summary(earn)
+
+
+# Combine data frame
+df <- tibble(x_edu = edu, 
+             y_earn = earn)
+
+# Summary statistics of the data frame
+describe(df)
+
+# Scatter plot with a fitted lm line
+df %>%
+  ggplot(aes(x = x_edu, y = y_earn)) +
+  geom_point(shape = 1, alpha = 0.7) +
+  geom_smooth(method = "lm") +
+  labs(title = "Relationship Between Years of Education and Income Rank",
+       subtitle = "(using simulated data)",
+       x = "Years of Edu",
+       y = "Income Rank")
+
+```
+
+### Fit OLS to simulated data
+  
+  We can fit a regression model to the simulated data, and compare the result with the "true" relationship. As you can see our modeling result is quite close to the "true" parameter values. 
+
+```{r part1-fit-ols}
+
+# Run a model
+m_simu <- lm(y_earn ~ x_edu, data = df)
+
+summary(m_simu)
+
+```
+  
+### `stargazer` for regression tables  
+  
+  In displaying regression tables, a commonly used package is `stargazer`, its main function `stargazer()` can format modeling results to neat regression tables. You can set the output type `type = "latex` and copy the output to Overleaf or other LaTeX editors, the code will automatically render to a cleanly formatted regression table.
+  
+```{r stargazer}
+# Use stargazer to display regression tables
+# For quick view in R:
+stargazer(m_simu, type = "text")
+# for PDF: 
+# stargazer(m_simu, type = "latex")
+
+```
+
+  A nice feature of `stargazer` is that it allows you to customize what statistics to add or omit in your table. For example, if we want to omit Residual Std. Error and the F Statistic:
+
+```{r stargazer2}
+
+stargazer(m_simu, type="text", omit.stat=c("ser", "f"))
+
+```
+---
+
+### Part 1 Exercise:
+
+1. Simulate the data with the same relationship as specified above, only **changing the residual term from having a sd = 10 to sd = 50**. Follow the steps demonstrated above, create a dataframe and fit an OLS model to your simulated data. Create a scatterplot of your data and post the plot to Slack. *Note:* Remember to `set.seed()`! 
+
+2. Then, using the formula we have learned in the lecture, hand-code the following statistics and post your answer to Slack:  
+  (a) The value of TSS
+  (b) $R^2$
+  (c) Verify that $R^2$ = $\rho^2$
+  (d) $se_{\beta_1}$
+  (e) Construct the 95% confidence interval for $\beta_1$ (You can use the $\beta_1$ value reported in your OLS modeling result)
+
+> The **sum of square error (SSE)** for Y is the sum of square errors for the fitted OLS model: $SSE = \sum\epsilon^2 = \sum(y - \hat y)^2$  
+  The **total sum of sqaures (TSS)** for Y is the sum of square errors for the baseline OLS model (the "null model") that predict the value of Y without any X (the mean of Y, $\overline Y$, is used in the null model): $TSS = \sum(y - \overline y)^2$  
+  **R-squared** (coefficient of determination) is the proportional reduction in squared error when fitted with the OLS model in comparison with the null model: $R^2 = \frac{TSS - SSE}{TSS}$  
+  The **mean square error (MSE)**: $MSE = \frac{SSE}{n-2}$  
+  The **standard error of $\beta_1$ in bivariant OLS** regression: $se_{\beta_1} = \sqrt{\frac{MSE}{\sum{(x -\overline x)^2}}}$
+
+3. Compare the scatterplot, the estimated $\beta_0$ and $\beta_1$, the $R^2$, and the $se_{\beta_1}$ in the demo OLS model output and your own simulated data model output, what do you observe? Why?  
+
+```{r } 
+
+# Your code here
+
+```
+
+---
+
+## Part 2: Multivariant Regression Using R
+
+### Simulate data:  
+
+  Suppose our outcome variable, $Y$, has the following data generating process in relation to education and income: 
+  
+  $$Y = 10 + 5 \cdot edu + 3 \cdot inc - 2\cdot edu*inc + \epsilon$$
+  Education is a random variable varies between 6 and 14 following a uniform distribution.  
+  
+  Income is a random variable varies between 3 and 10 following a uniform distribution. 
+  
+  The error term, $\epsilon$ follows a normal distribution with mean = 0 and sd = 2. 
+  
+```{r ,fig.align = "center"}
+
+# simulate the data generating process:
+set.seed(1234)
+n = 1000
+
+edu = runif(n, min = 6, max = 14) %>% ceiling() # ceiling the value to get only integers
+
+inc = runif(n, min = 3, max = 10)
+
+y = 10 + 5*edu + 3*inc + -2*edu*inc + rnorm(n, mean = 0, sd = 2)
+
+
+# combine variables into a data frame
+df = tibble(edu = edu, inc = inc, y = y)
+
+# check distribution
+par(mfrow = c(1, 3)) # arrange the following plots in 1 row and 3 cols
+hist(edu)
+hist(inc)
+hist(y)
+
+```
+
+Once we have simulated the sample data, we can see how different model set up performs.  
+
+### Multiple regression with no interaction term: 
+
+First, let us estimate a multiple regression without interaction, and see how the OLS line fit in relation to the data. We also want to check how the model residuals behave in relation to fitted y. 
+
+```{r }
+# Model without interaction
+mod1 = lm(y ~ edu + inc, data = df)
+summary(mod1)
+
+# A scatterplot of edu and y, with a fitted ols line with income taking its mean value
+df %>%
+  ggplot() +
+  geom_point(aes(edu, y, color = inc)) +
+  geom_abline(intercept = mod1$coefficients[1] + mod1$coefficients['inc']*mean(df$inc), 
+              slope = mod1$coefficients['edu']) +
+  labs(title = "Fitted OLS line with income held at its mean value")
+
+# A scatterplot of inc and y, with a fitted ols line with edu taking its mean value
+df %>%
+  ggplot() +
+  geom_point(aes(inc, y, color = edu)) +
+  geom_abline(intercept = mod1$coefficients[1] + mod1$coefficients['edu']*mean(df$edu) , 
+              slope = mod1$coefficients['inc'])
+
+
+
+# Check model residual behaviors
+## Residual vs. fitted y
+plot(mod1$fitted.values, mod1$residuals)
+abline(h = 0, col="red")
+
+```
+
+As we can see, when we did not taking into consideration of the interaction term, the model still captures the average effect of the predictor (while holding the other at constant). However, the scatterplot as well as the residual diagnostic also suggest that we are missing some important patterns. 
+
+### Multiple regression with interaction:
+
+Now we add the interaction term `edu*inc` into the model. We can plot the relationship between y and one of the x's and also plot the different slopes given the other x changes. 
+
+```{r }
+
+# Taking into account of the interaction:
+mod2 = lm(y ~ edu + inc + edu*inc, data = df)
+summary(mod2)
+
+
+# Relationship between inc and y when edu is changing:
+df %>%
+  ggplot(aes(inc, y, color = as.factor(edu))) +
+  geom_point() +
+  geom_abline(intercept = mod2$coefficients[1] + mod2$coefficients['edu']*edu,
+              slope = mod2$coefficients['inc'] + mod2$coefficients['edu:inc']*edu) +
+  labs(title = "Income and Y by education levels with fitted OLS line (with interaction)")
+
+
+# Relationship between edu and y when inc is changing:
+df %>%
+  ggplot(aes(edu, y, color = inc)) +
+  geom_point() +
+  geom_abline(intercept = mod2$coefficients[1] + mod2$coefficients['inc']*inc,
+              slope = mod2$coefficients['edu'] + mod2$coefficients['edu:inc']*inc,
+              alpha = 0.2, color = "grey80") +
+  labs(title = "Edu and Y by income levels with fitted OLS line (with interaction)")
+
+
+# Check model residual behaviors
+## Residual vs. fitted y
+plot(mod2$fitted.values, mod2$residuals)
+abline(h = 0, col="red")
+
+
+```
+
+### Interpret regression coefficient for model with interactions:
+
+Interaction effects can be tricky to interpret. The safest way is to write down your models in equations and plug in values into the equations to figure out the difference. 
+
+For example, for Model 2, our regression equation is:
+
+$$\hat{Y} = 9.92 + 5.02\cdot\text{edu } + 3.01\cdot\text{inc } - 2\cdot\text{edu}*\text{inc }$$
+
+Note that for the effect of `edu` and `inc`, it is no longer indicated by the coefficients of their individual terms. **Whenever you try to interpret the coefficient for variables that are included in an interaction term, you need to take into account the coefficient of the interaction term**. 
+
+For example, let's examine the effect of `edu`. Holding all other variables constant, for **one unit increase in `edu`**, we have:
+
+$$\Delta\hat{Y} = 5.02 - 2\cdot\text{inc}$$
+This means that **the effect of education is dependent on income**. And the coefficient in the term $5.02\cdot\text{edu }$ can only be interpreted as the effect of income **when income equals to 0**.  
+
+Let us look at the graphs on the effects of education on Y when there is an interaction effect between eduation and income:
+
+```{r }
+
+# Relationship between inc and y when edu is changing:
+df %>%
+  ggplot(aes(inc, y, color = as.factor(edu))) +
+  geom_point() +
+  geom_abline(intercept = mod2$coefficients[1] + mod2$coefficients['edu']*edu,
+              slope = mod2$coefficients['inc'] + mod2$coefficients['edu:inc']*edu,
+              color = as.factor(edu)) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  xlim(-5, 25) +
+  ylim(-200, 200) +
+  labs(title = "Effect of Education when Income = 0")
+
+
+```
+
+You can center your data so that the mean of your predictors equals to zero, then you can interpret the coefficients of each predictor as its effect on Y **when other variables are held at their mean**.
+
+```{r }
+
+# Center the x variable
+df_center <- df %>%
+  mutate(inc = inc - mean(inc),
+         edu = edu - mean(edu))
+
+# Estimate model
+mod3 <- lm(y ~ edu + inc + edu*inc, data = df_center)
+summary(mod3)
+
+# Relationship between inc and y when edu is changing:
+df_center %>%
+  ggplot(aes(inc, y, color = as.factor(df_center$edu))) +
+  geom_point() +
+  geom_abline(intercept = mod3$coefficients[1] + mod3$coefficients['edu']*df_center$edu,
+              slope = mod3$coefficients['inc'] + mod3$coefficients['edu:inc']*df_center$edu) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  labs(title = "Effect of Education when Income = 0")
+
+
+# Check model residual behaviors
+## Residual vs. fitted y
+plot(mod3$fitted.values, mod3$residuals)
+abline(h = 0, col="red")
+```
+### Part 2 Exercise 
+
+  1. Import `lab5_earnings.csv` to your environment. Perform the following data cleaning steps: (1) If `age` takes the value 9999, recode it as `NA`; (2) Create a new variable `female` that equals 1 when `sex` takes the value `female`, and equals to 0 otherwise; (3) Create a new variable `black` that equals 1 when `race` is `black` and equals to 0 otherwise; (4) Create a new variable `other` that equals to 1 when `race` is 'other` and 0 otherwise.
+  
+  2. Use the `describe()` function from the `psych` package to generate a quick descriptive statistics of your data.
+  
+  3. Now, estimate the following models and display your model results in a single table using `stargazer(m_1, m_2, ..., m_n, type="text")`. Post a screenshot of your table on Slack.
+
+(1) Model 1: earn ~ age (baseline)
+(2) Model 2: earn ~ age + edu 
+(3) Model 3: earn ~ age + edu + female
+(4) Model 4: earn ~ age + edu + female + race
+(5) Model 5: earn ~ age + edu + female + race + edu*female
+
+  4. In Model 5, holding other variables constant, what will be the predicted difference in estimated mean earnings for a white man and a white women?  
+  
+  5. Holding other variables constant, what will be the predicted difference in estimated mean earnings for a white women and a black women?  
+  
+  6. Holding other variables constant, what will be the predicted difference in estimated mean earnings for a white man and a black women?
+
+```{r }
+
+# Your code here
+
+```
+

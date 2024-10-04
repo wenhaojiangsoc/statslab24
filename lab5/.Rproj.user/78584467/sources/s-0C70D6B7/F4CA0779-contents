@@ -1,0 +1,219 @@
+---
+title: "SOC-GA 2332 Intro to Stats Lab 5 Solution"
+author: "Di Zhou"
+date: "10/01/2021"
+output:
+  html_document:
+    df_print: paged
+    theme: paper
+    highlight: textmate
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+    toc_depth: 3
+    number_sections: false
+  pdf_document: 
+    toc: true
+---
+
+
+<style type="text/css">
+
+body{ 
+
+    font-size: 16px;
+    line-height: 1.7em;
+    <!-- text-align: justify; -->
+
+}
+
+blockquote {
+    padding: 10px 20px;
+    margin: 0 0 20px;
+    font-size: 16px;
+    border: solid 1px;
+}
+
+h1 { font-size: 32px; }
+
+h2 { font-size: 24px; }
+
+h3 { font-size: 20px; }
+
+</style>
+
+<br>
+
+---
+```{r setup, include=T}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(pacman)
+p_load(tidyverse, psych, gridExtra, foreign, stargazer, ggcorrplot, kableExtra)
+
+```
+
+### Part 1 Exercise:
+
+1. Simulate the data with the same relationship as specified above, only **changing the residual term from having a sd = 10 to sd = 50**. Follow the steps demonstrated above, create a dataframe and fit an OLS model to your simulated data. Create a scatterplot of your data and post the plot to Slack. *Note:* Remember to `set.seed()`! 
+
+2. Then, using the formula we have learned in the lecture, hand-code the following statistics and post your answer to Slack:  
+  (a) The value of TSS
+  (b) $R^2$
+  (c) Verify that $R^2$ = $\rho^2$
+  (d) $se_{\beta_1}$
+  (e) Construct the 95% confidence interval for $\beta_1$ (You can use the $\beta_1$ value reported in your OLS modeling result)
+
+> The **sum of square error (SSE)** for Y is the sum of square errors for the fitted OLS model: $SSE = \sum\epsilon^2 = \sum(y - \hat y)^2$  
+  The **total sum of sqaures (TSS)** for Y is the sum of square errors for the baseline OLS model (the "null model") that predict the value of Y without any X (the mean of Y, $\overline Y$, is used in the null model): $TSS = \sum(y - \overline y)^2$  
+  **R-squared** (coefficient of determination) is the proportional reduction in squared error when fitted with the OLS model in comparison with the null model: $R^2 = \frac{TSS - SSE}{TSS}$  
+  The **mean square error (MSE)**: $MSE = \frac{SSE}{n-2}$  
+  The **standard error of $\beta_1$ in bivariant OLS** regression: $se_{\beta_1} = \sqrt{\frac{MSE}{\sum{(x -\overline x)^2}}}$
+
+3. Compare the scatterplot, the estimated $\beta_0$ and $\beta_1$, the $R^2$, and the $se_{\beta_1}$ in the demo OLS model output and your own simulated data model output, what do you observe? Why?  
+
+```{r } 
+set.seed(1234)
+# Simulate IV (edu level)
+edu2 <- rpois(300, lambda = 6) #rpois: Random Poisson Distribution with parameter lamda 
+# Simulate DV 
+earn2 <- 10 + 6*edu2 + rnorm(300, 0, 50) # add a random error using rnorm() 
+
+# Combine dataframe
+df_exercise <- tibble(x_edu = edu2, y_earn = earn2)
+
+# Fit model
+m_simu_exercise <- lm(y_earn ~ x_edu, data = df_exercise)
+summary(m_simu_exercise)
+
+# Scatterplot
+df_exercise %>%
+  ggplot(aes(x = x_edu, y = y_earn)) +
+  geom_point(shape = 1, alpha = 0.7) +
+  geom_smooth(method = "lm") +
+  labs(title = "Relationship Between Years of Education and Income Rank",
+       subtitle = "(using simulated data)",
+       x = "Years of Edu",
+       y = "Income Rank")
+
+
+# Create 3 variables: x_mean, y_mean, fitted_y
+df_exercise <- df_exercise %>%
+  mutate(x_mean = mean(df_exercise$x_edu),
+         y_mean = mean(df_exercise$y_earn),
+         y_fitted = -1.402 + 8.255*x_edu)
+
+#TSS
+TSS <- (df_exercise$y_earn - df_exercise$y_mean)^2 %>% sum()
+TSS
+
+# R-squared
+SSE <- (df_exercise$y_earn - df_exercise$y_fitted)^2 %>% sum()
+R_sq <- (TSS - SSE)/TSS
+R_sq
+
+# Rho
+rho = cor(df_exercise$y_earn, df_exercise$x_edu)
+rho^2 # is equal to R_sq
+
+# se_beta1
+MSE <- SSE/(nrow(df_exercise) - 2)
+denomi <- (df_exercise$x_edu - df_exercise$x_mean)^2 %>% sum() 
+#Or the denominator is (n-1)sd_x^2: (nrow(df_exercise) - 1)*sd(df_exercise$x_edu)^2
+se_beta1 <- sqrt(MSE/denomi)
+se_beta1
+
+# CI of se_beta1: 
+#upper: 8.255 + 1.96*1.222 = 10.65012
+#lower: 8.255 - 1.96*1.222 = 5.85988
+
+```
+
+---
+
+### Part 2 Exercise 
+
+  1. Import `lab5_earnings.csv` to your environment. Perform the following data cleaning steps: (1) If `age` takes the value 9999, recode it as `NA`; (2) Create a new variable `female` that equals 1 when `sex` takes the value `female`, and equals to 0 otherwise; (3) Create a new variable `black` that equals 1 when `race` is `black` and equals to 0 otherwise; (4) Create a new variable `other` that equals to 1 when `race` is 'other` and 0 otherwise.
+  
+  2. Use the `describe()` function from the `psych` package to generate a quick descriptive statistics of your data.
+  
+  3. Now, estimate the following models and display your model results in a single table using `stargazer(m_1, m_2, ..., m_n, type="text")`. Post a screenshot of your table on Slack.
+
+(1) Model 1: earn ~ age (baseline)
+(2) Model 2: earn ~ age + edu 
+(3) Model 3: earn ~ age + edu + female
+(4) Model 4: earn ~ age + edu + female + race
+(5) Model 5: earn ~ age + edu + female + race + edu*female
+
+  4. In Model 5, holding other variables constant, what will be the predicted difference in estimated mean earnings for a white man and a white women?  
+  
+  5. Holding other variables constant, what will be the predicted difference in estimated mean earnings for a white women and a black women?  
+  
+  6. Holding other variables constant, what will be the predicted difference in estimated mean earnings for a white man and a black women?
+
+```{r }
+
+# Import
+earnings_df <- read.csv("data/lab5_earnings.csv", stringsAsFactors = F)
+
+# Recode age & sex
+earnings_df <- earnings_df %>%
+  mutate(age_recode = ifelse(age == 9999, NA, age),
+         female = ifelse(sex == "female", 1, 0))
+
+# Recode race
+earnings_df <- earnings_df %>% 
+  mutate(black = ifelse(race == "black", 1, 0),
+         other = ifelse(race == "other", 1, 0))
+
+# Display
+head(earnings_df, 10) %>% kbl("html") %>% kable_classic_2(full_width = F)
+
+# Describe
+describe(earnings_df)
+
+# Nested Models
+
+m1 <- lm(earn ~ age_recode, 
+         data = earnings_df)
+
+m2 <- lm(earn ~ age_recode + edu,
+         data = earnings_df)
+
+m3 <- lm(earn ~ age_recode + edu + female,
+         data = earnings_df)
+
+m4 <- lm(earn ~ age_recode + edu + female + black + other,
+         data = earnings_df)
+
+m5 <- lm(earn ~ age_recode + edu + female + black + other + edu*female,
+         data = earnings_df)
+
+# save(m5, file = "data/m5_fordemo.RData") #save for demo purpose
+
+stargazer(m1, m2, m3, m4, m5, type="text", omit.stat=c("f"))
+
+
+```
+
+
+Q4: For a white man:
+
+$$\Delta\hat{Earnings}_{\text{wh,m}} = 6.083\cdot \text{edu} -1.571\cdot 0 - 3.128\cdot\text{edu }\cdot0 \\ = 6.083\cdot \text{edu}$$
+  
+  For a white woman:
+
+$$\Delta\hat{Earnings}_{\text{wh,w}} = 6.083\cdot \text{edu} -1.571\cdot 1 - 3.128\cdot\text{edu }\cdot1 \\ = 6.083\cdot \text{edu} -1.571 - 3.128\cdot\text{edu }$$
+
+  
+  Thus the difference in $\Delta\hat{Earnings}$ between a white man and a white woman: $-1.571 - 3.128\cdot\text{edu }$  
+  
+Q5: For a white woman, it's demonstrated above. For a black woman:
+
+$$\Delta\hat{Earnings}_{\text{bl,w}} = 6.083\cdot \text{edu} - 2.385\cdot1 -1.571\cdot 1 - 3.128\cdot\text{edu }\cdot1 \\ = 6.083\cdot \text{edu} - 2.385 -1.571 - 3.128\cdot\text{edu }$$
+  
+  
+  Thus the difference in $\Delta\hat{Earnings}$ between a white woman and a black woman is:$- 2.385$
+  
+  
+  Q6: From the equations above, we know the difference between $\Delta\hat{Earnings}_{\text{wh,m}}$ and $\Delta\hat{Earnings}_{\text{bl,w}}$ is $- 2.385 -1.571 - 3.128\cdot\text{edu } = -3.956 - 3.128\cdot\text{edu }$

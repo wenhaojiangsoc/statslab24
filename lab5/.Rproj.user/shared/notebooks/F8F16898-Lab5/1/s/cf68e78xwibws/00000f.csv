@@ -1,0 +1,5 @@
+"0",""
+"0",""
+"0","# Check model residual behaviors"
+"0","## Residual vs. fitted y"
+"0","plot(mod2$fitted.values, mod2$residuals)"

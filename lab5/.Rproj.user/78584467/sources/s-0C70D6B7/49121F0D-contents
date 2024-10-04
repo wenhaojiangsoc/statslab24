@@ -1,0 +1,142 @@
+# Simulate data for Lab5
+library(tidyverse)
+library(psych)
+
+# cog ~ edu, inc, edu*inc 
+# beta_edu = 5
+# beta_interaction = -2
+# inc range btw 3, 10 
+
+# if ignore a real interaction: beta_edu now means the average effect of education across income levels
+# If you are interested in the effect heterogeneity, should include the interaction and test the beta of interaction term
+# beta_edu when interaction is included: effect of edu when inc == 0 (you can center your inc var to have a mean of 0)
+
+set.seed(1234)
+n = 1000
+edu = runif(n, min = 6, max = 14)
+inc = runif(n, mean = 3, sd = 10)
+y = 10 + 5*edu + 3*inc + -2*edu*inc + rnorm(n, mean = 0, sd = 2)
+
+df = tibble(edu = edu, inc = inc, y = y)
+df %>%
+  ggplot() +
+  geom_point(aes(inc, y, color = edu))
+
+df %>%
+  ggplot() +
+  geom_point(aes(edu, y, color = inc))
+
+mod1 = lm(y~ edu + inc, data = df)
+summary(mod1)
+
+# Relationship between edu and y when holding income at its mean
+df %>%
+  ggplot() +
+  geom_point(aes(edu, y, color = inc)) +
+  geom_abline(intercept = mod1$coefficients[1] + mod1$coefficients[3]*mean(df$inc) , 
+              slope = mod1$coefficients[2])
+
+# Relationship between inc and y when holding edu at its mean:
+df %>%
+  ggplot() +
+  geom_point(aes(inc, y, color = edu)) +
+  geom_abline(intercept = mod1$coefficients[1] + mod1$coefficients[2]*mean(df$edu) , 
+              slope = mod1$coefficients[3])
+
+
+
+# Taking into account of the interaction:
+mod2 = lm(y ~ edu + inc + edu*inc, data = df)
+summary(mod2)
+
+
+# Relationship between edu and y when holding income at its mean
+df %>%
+  ggplot() +
+  geom_point(aes(edu, y, color = inc)) +
+  geom_abline(intercept = mod1$coefficients[1] + mod1$coefficients[3]*mean(df$inc) , 
+              slope = mod1$coefficients[2])
+
+# Relationship between inc and y when holding edu at its mean:
+df %>%
+  ggplot() +
+  geom_point(aes(inc, y, color = edu)) +
+  geom_abline(intercept = mod2$coefficients[1] + mod2$coefficients[2]*mean(df$edu), 
+              slope = mod2$coefficients[3] + mod2$coefficients[4]*edu,
+              alpha = 0.2, color = "grey80") 
+
+
+
+inc_hc = rnorm(n, mean = 1, sd = 1) + 1*edu
+
+cog_hc = 5 + edu + inc_hc + 0.4*edu*inc_hc + rnorm(n, mean = 0, sd = 1)
+plot(inc, cog)
+plot(inc, edu)
+
+
+
+
+mod1 = lm(cog ~ edu + inc, data = df)
+
+mod2 = lm(cog ~ edu + inc + edu*inc, data = df)
+
+mod_vif = lm(inc ~ edu, data = df)
+summary(mod_vif)
+
+summary(mod1)
+summary(mod2)
+
+describe(df)
+rcorr(df)
+
+set.seed(1234)
+# Simulate IV (edu level)
+edu <- rpois(1000, lambda = 6) #rpois: Random Poisson Distribution with parameter lamda 
+# Simulate IV (gender)
+female <- rbinom(1000, 1, 0.5)
+# Simulate IV (black)
+black <- rbinom(1000, 1, 0.3)
+# Simulate IV (other)
+other <- rbinom(1000, 1, 0.1)
+# Simulate IV (age)
+age <- runif(1000, min=20, max=65) %>% ceiling()
+
+# Simulate DV with interaction effect for educatio and gender, race and gender
+earn <- 15 + 6*edu - 2*female - 3*edu*female - 1*black - 1*other -1.5*black*female - 1*other*female + 0.2*age + rnorm(1000, 0, 8) 
+
+# Combine dataframe
+df <- tibble(earn = earn,
+             edu = edu,
+             female = female, 
+             black = black,
+             other = other,
+             age= age
+) %>%
+  mutate(unique_id = row_number() + 10000)
+
+# use 9999 to indicate NA 
+set.seed(1234)
+df_randomNA <- df %>% sample_n(20) %>% mutate(age = 9999)
+
+# replace in original df
+df[match(df_randomNA$unique_id, df$unique_id), ] <- df_randomNA
+
+# use character for race and gender
+df <- df %>%
+  mutate(sex = ifelse(female == 1, "female", "male"),
+         race = ifelse(black == 1, "black", 
+                       ifelse(other == 1, "other", "white")))
+
+df_export <- df %>% select(unique_id, earn, edu, sex, race, age)
+write.csv(df_export, "lab5_earnings.csv", row.names = F)
+
+# Summary statistics
+summary(df)
+
+# Plot
+df %>%
+  ggplot(aes(x = edu, y = earn, color = as.factor(female))) +
+  geom_point(shape = 1) +
+  geom_smooth(method = "lm")
+
+
