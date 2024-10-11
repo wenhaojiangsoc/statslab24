@@ -1,0 +1,8 @@
+"0","knitr::opts_chunk$set(echo = TRUE)"
+"0",""
+"0","## load packages"
+"0","library(pacman)"
+"0","p_load(tidyverse, psych, gridExtra, foreign, stargazer, ggcorrplot, coefplot, kableExtra)"
+"0",""
+"0","## read data"
+"0","load(""data/earnings_df.RData"")"

@@ -1,0 +1,207 @@
+---
+title: "SOC-GA 2332 Intro to Stats Lab 6 Exercise Solution"
+author: "Fall 2021"
+date: "10/08/2021"
+output:
+  html_document:
+    df_print: paged
+    theme: paper
+    highlight: textmate
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+    toc_depth: 3
+    number_sections: false
+  pdf_document: 
+    toc: true
+---
+
+
+<style type="text/css">
+
+body{ 
+
+    font-size: 16px;
+    line-height: 1.7em;
+    <!-- text-align: justify; -->
+
+}
+
+blockquote {
+    padding: 10px 20px;
+    margin: 0 0 20px;
+    font-size: 16px;
+    border: solid 1px;
+}
+
+h1 { font-size: 32px; }
+
+h2 { font-size: 24px; }
+
+h3 { font-size: 20px; }
+
+</style>
+
+<br>
+
+---
+
+```{r setup, include=F}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(pacman)
+p_load(tidyverse, psych, gridExtra, foreign, stargazer, ggcorrplot, coefplot, kableExtra)
+
+```
+
+## Part 1: Multivariate Regression & Interaction with One Dummy
+
+### Part 1 Exercise (from Lab 5)
+
+  1. Import `lab5_earnings.csv` to your environment. Perform the following data cleaning steps: 
+    (1) If `age` takes the value 9999, recode it as `NA`; 
+    (2) Create a new variable `female` that equals 1 when `sex` takes the value `female`, and equals to 0 otherwise; 
+    (3) Create a new variable `black` that equals 1 when `race` is `black` and equals to 0 otherwise; 
+    (4) Create a new variable `other` that equals to 1 when `race` is 'other` and 0 otherwise.
+  
+  2. Use the `describe()` function from the `psych` package to generate a quick descriptive statistics of your data.
+  
+  3. Now, estimate the following models and display your model results in a single table using `stargazer(m_1, m_2, ..., m_n, type="text")`. 
+
+(1) Model 1: earn ~ age (baseline)
+(2) Model 2: earn ~ age + edu 
+(3) Model 3: earn ~ age + edu + female
+(4) Model 4: earn ~ age + edu + female + race
+(5) Model 5: earn ~ age + edu + female + race + edu*female
+
+  4. Write down your prediction equation for Model 5
+
+  5. In Model 5, holding other variables constant, what will be the predicted difference in estimated mean earnings for a white man and a white women?  
+  
+  6. Holding other variables constant, what will be the predicted difference in estimated mean earnings for a white women and a black women?  
+  
+  7. Holding other variables constant, what will be the predicted difference in estimated mean earnings for a white man and a black women?
+
+```{r }
+
+# Import
+earnings_df <- read.csv("data/lab5_earnings.csv", stringsAsFactors = F)
+
+# Recode age & sex
+earnings_df <- earnings_df %>%
+  mutate(age_recode = ifelse(age == 9999, NA, age),
+         female = ifelse(sex == "female", 1, 0))
+
+# Recode race
+earnings_df <- earnings_df %>% 
+  mutate(black = ifelse(race == "black", 1, 0),
+         other = ifelse(race == "other", 1, 0))
+
+# Display
+head(earnings_df, 10) %>% kbl("html") %>% kable_classic_2(full_width = F)
+
+# Describe
+describe(earnings_df)
+
+# Nested Models
+
+m1 <- lm(earn ~ age_recode, 
+         data = earnings_df)
+
+m2 <- lm(earn ~ age_recode + edu,
+         data = earnings_df)
+
+m3 <- lm(earn ~ age_recode + edu + female,
+         data = earnings_df)
+
+m4 <- lm(earn ~ age_recode + edu + female + black + other,
+         data = earnings_df)
+
+m5 <- lm(earn ~ age_recode + edu + female + black + other + edu*female,
+         data = earnings_df)
+
+# save(m5, file = "data/m5_fordemo.RData") #save for demo purpose
+
+stargazer(m1, m2, m3, m4, m5, type="text", omit.stat=c("f"))
+
+
+```
+
+Q4: Equation according to model 5 (coefficients are simplified for demostration purpose):
+
+$$\hat Y = 17 + 0.2 \cdot \text{Age} + 6 \cdot \text{Edu} - 2\cdot\text{Female} -2 \cdot \text{Black} -1 \cdot \text{Other} - 3\cdot\text{Edu*Female}$$
+
+Q5: In Model 5, holding other variables constant, what will be the predicted difference in estimated mean earnings for a white man and a white women?
+    
+- "White man" is the reference category, so its group mean is the intercept  
+- "White woman" will make the terms $(- 2\cdot\text{Female})$ and $(- 3\cdot\text{Edu*Female})$ non-zero
+- The difference in means will be $-2-3\cdot\text{Edu}$
+  
+Q6: Holding other variables constant, what will be the predicted difference in estimated mean earnings for a white women and a black women? 
+
+- "White woman" will make the terms $(- 2\cdot\text{Female})$ and $(- 3\cdot\text{Edu*Female})$ non-zero
+- "Black woman" will make the term $(- 2\cdot\text{Female})$, $(-2 \cdot \text{Black})$, and $(-3\cdot\text{Edu*Female})$ non-zero
+- The difference in means will be $-2$
+  
+Q7: Holding other variables constant, what will be the predicted difference in estimated mean earnings for a white man and a black women?
+
+- "White man" is the reference category
+- "Black woman" will make the term $(- 2\cdot\text{Female})$, $(-2 \cdot \text{Black})$, and $(3\cdot\text{Edu*Female})$ non-zero
+- The difference in means will be $(- 2 -2 + 3\cdot\text{Edu}) = (-4 + 3\cdot\text{Edu})$
+
+
+## Part 2: Interaction with Two Dummy Variables
+
+Given the following modeling result, please answer the questions.
+
+![](graph/dummy_reg_table.png){width=70%}
+
+---
+
+### Part 2 Exercise 
+
+  1. What will be the predicted difference in estimated mean earnings for a white person with a college degree and a black person with a college degree? Whose earnings will be higher?
+  
+  2. What will be the predicted difference in estimated mean earnings for a white person with a college degree and a black person without a college degree? Whose earnings will be higher?
+  
+  3. What will be the predicted difference in estimated mean earnings for a white person without a college degree and a black person without a college degree? Whose earnings will be higher?
+  
+  4. What will be the predicted difference in estimated mean earnings for a white person without a college degree and a black person with a college degree? Whose earnings will be higher?
+  
+  5. What will be the predicted difference in estimated mean earnings for a white person with a college degree and a white person without a college degree? Whose earnings will be higher?
+    
+  6. What will be the predicted difference in estimated mean earnings for a black person with a college degree and a black person without a college degree? Whose earnings will be higher?
+  
+  7. How to interpret the interaction coefficient? 
+
+
+**Answer**  
+  Q1: -(-2.773 + 1.496)  = 1.277, white with college will be 1.277 higher than black with college  
+  
+  Q2: 6.129 - (-2.773) = 8.902, white with college will be 8.902 higher than black without college  
+  
+  Q3: 2.773, white without college will be 2.773 higher than black without college    
+  
+  Q4: -(-2.773 + 6.129 + 1.496) = -4.852, white without college will be 4.852 lower than black with college  
+  
+  Q5: 6.129, white with college will be 6.129 higher than white without college
+  
+  Q6: 6.129 + 1.496 = 7.625, black with college will be 7.625 higher than black without college
+  
+  Q7: There are two ways to interpret the interaction coefficient: (1) For black respondents, having a college degree will provide an additional positive effect on one's earning. (2) For respondents with a college degree, being black will provide an additional positive effect on one's earning.
+
+To solve these questions, you can write down the prediction equation of this model:
+
+$$\hat {Earning} = 15.077 -2.773 \cdot \text{black} + 6.129 \cdot \text{college} + 1.496 \cdot \text{black} \cdot \text{college}$$  
+Then, specify the prediction equations for four possible respondents and compare them accordingly.
+
+1. A white person with a college degree:
+$$\hat {Earning} = 15.077 -2.773 \cdot 0 + 6.129 \cdot 1 + 1.496 \cdot 0 \cdot 1$$
+2. A black person with a college degree:
+$$\hat {Earning} = 15.077 -2.773 \cdot 1 + 6.129 \cdot 1 + 1.496 \cdot 1 \cdot 1$$
+
+3. A white person without a college degree:
+$$\hat {Earning} = 15.077 -2.773 \cdot 0 + 6.129 \cdot 0 + 1.496 \cdot 0 \cdot 0$$
+
+4. A black person without a college degree:
+$$\hat {Earning} = 15.077 -2.773 \cdot 1 + 6.129 \cdot 0 + 1.496 \cdot 1 \cdot 0$$

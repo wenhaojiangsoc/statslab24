@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1633715441746.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3261231309",
+    "id" : "E67FB1F8",
+    "lastKnownWriteTime" : 1633653425,
+    "last_content_update" : 1633653425,
+    "path" : "/Volumes/GoogleDrive/My Drive/r_and_git/intro_to_stats_f2021/Lab6/Lab6_solution.Rmd",
+    "project_path" : "Lab6_solution.Rmd",
+    "properties" : {
+        "cursorPosition" : "145,13",
+        "scrollLine" : "5",
+        "tempName" : "Untitled2"
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

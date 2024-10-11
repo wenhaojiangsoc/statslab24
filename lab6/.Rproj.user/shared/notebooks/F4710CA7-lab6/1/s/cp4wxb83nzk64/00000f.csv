@@ -1,0 +1,6 @@
+"0","## correlation matrix
+## set use = ""complete.obs"" to ignore observations with NAs
+cor(earnings_df_cat, use = ""complete.obs"")
+"
+"2","Error in cor(earnings_df_cat, use = ""complete.obs"") : 'x' must be numeric
+"

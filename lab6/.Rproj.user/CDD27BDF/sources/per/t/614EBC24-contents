@@ -1,0 +1,321 @@
+---
+title: "SOC-GA 2332 Intro to Stats Lab 6"
+author: "Di Zhou"
+date: "10/08/2021"
+output:
+  html_document:
+    df_print: paged
+    theme: paper
+    highlight: textmate
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+    toc_depth: 3
+    number_sections: false
+  pdf_document: 
+    toc: true
+---
+
+
+<style type="text/css">
+
+body{ 
+
+    font-size: 16px;
+    line-height: 1.7em;
+    <!-- text-align: justify; -->
+
+}
+
+blockquote {
+    padding: 10px 20px;
+    margin: 0 0 20px;
+    font-size: 16px;
+    border: solid 1px;
+}
+
+h1 { font-size: 32px; }
+
+h2 { font-size: 24px; }
+
+h3 { font-size: 20px; }
+
+</style>
+
+<br>
+
+---
+
+## Housekeeping
+
+- Exam 2 
+- Problem Set 1 is returned
+- Replication project part 1 (suggested) timeline: 
+
+|         Task                       |  Timeline          |
+|------------------------------------|--------------------|
+| Obtaining the raw data from IPUMS  | By Oct. 15th       |
+| Cleaning the data                  | Oct. 18th to Oct. 22nd   |
+| Replicating Table A1a, Table A1b, and Figure 1 and put in LaTeX | Oct. 25th to Oct. 29th  |
+| Replicating the regression results (Table A2a, Table A2b) and put in LaTeX | Nov. 1st to Nov. 5th |
+| Write the 2-page project report + Wiggle room for formatting and debugging, etc. | Nov. 8th to Nov. 12th |  
+
+
+- **Next lab: Present your data simulation for a multivariate relationship**  
+  + We will have an activity for the next lab: you will present your code and your findings from a dataset that you simulated to have a specific type of multivariate relationship (see table below).
+  + You need to present the following content: 
+    a. Define/explain the type of multivariate relationship you are simulating
+    b. What are the variables in your dataset? What are their "true" relationship (the data-generating process)? 
+    c. Show your code of simulation
+    d. Assuming there is a researcher who obtained this dataset, what would be a meaningful research question that they can ask?
+    e. Estimate a model based on that research question
+    f. Show what would happen if the researcher failed to account for the "true" data-generating process in their model(s). (This can be a comparison of modeling results using different modeling specifications, a comparison of the model estimates to the "true" parameter values, and/or any other approaches that you think can effectively answer this question.)
+    g. Any conclusions/thoughts/questions you have about the exercise.
+  + Use R Markdown for coding, and you can present in either the R Markdown file, or you can create a PDF, slideshow, or html file for presentation. 
+  + **Send your presentation file to me the day before the next lab (i.e. by Oct. 14th EOD)**
+  + The presentation should be no longer than 15 minutes. 
+    
+|         Type        |  Owner          |
+|---------------------|-----------------|
+| Multiple causes     |        Nnamdi         |
+| Mediation           |       Terrence          |
+| Moderation          |       Payton          |
+| Confounding         |        Nick         |
+
+---
+
+## Part 0: Questions about the lecture
+
+
+<br/><br/>
+
+
+
+---
+
+```{r setup, include=F}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(pacman)
+p_load(tidyverse, psych, gridExtra, foreign, stargazer, ggcorrplot, coefplot, kableExtra)
+
+```
+
+## Part 1: Multivariate Regression & Interaction with One Dummy
+
+### Dummies 
+
+  For categorical variables, we either use the categorical variable directly, or convert them to 0/1 dummies when we want to include them in a regression model. Note that for a categorical variable that have $n$ categories, the regression model will only have $n-1$ dummies or categorical variable predictors, because the $n^{th}$ dummy is redundant given that if an observation does not belong to any of the $n-1$ category, then it must be in the $n^{th}$ category. We call the left-out category the **reference category**. 
+
+However, whichever approach you use for estimating your model, the interpretation of your categorical predictors' coefficients follow the logic of a 0/1 dummy. And you should always interpret your model coefficients with the reference category in mind. This could get complicated when you have multiple dummy variables, especially when they are interacted in your model.
+
+In the case of the dummies representing "race" in the `earnings_df` that we will be using today, we have:
+
+Category | $Dummy_1 (black)$| $Dummy_2 (other)$   
+---------|------------|-----------
+White    | 0          |    0 
+Black    | 1          |    0
+Other    | 0          |    1
+
+---
+
+### Part 1 Exercise (from Lab 5)
+
+  1. Import `lab5_earnings.csv` to your environment. Perform the following data cleaning steps: 
+    (1) If `age` takes the value 9999, recode it as `NA`; 
+    (2) Create a new variable `female` that equals 1 when `sex` takes the value `female`, and equals to 0 otherwise; 
+    (3) Create a new variable `black` that equals 1 when `race` is `black` and equals to 0 otherwise; 
+    (4) Create a new variable `other` that equals to 1 when `race` is 'other` and 0 otherwise.
+  
+  2. Use the `describe()` function from the `psych` package to generate a quick descriptive statistics of your data.
+  
+  3. Now, estimate the following models and display your model results in a single table using `stargazer(m_1, m_2, ..., m_n, type="text")`. 
+
+(1) Model 1: earn ~ age (baseline)
+(2) Model 2: earn ~ age + edu 
+(3) Model 3: earn ~ age + edu + female
+(4) Model 4: earn ~ age + edu + female + race
+(5) Model 5: earn ~ age + edu + female + race + edu*female
+
+  4. Write down your prediction equation for Model 5
+
+  5. In Model 5, holding other variables constant, what will be the predicted difference in estimated mean earnings for a white man and a white women?  
+  
+  6. Holding other variables constant, what will be the predicted difference in estimated mean earnings for a white women and a black women?  
+  
+  7. Holding other variables constant, what will be the predicted difference in estimated mean earnings for a white man and a black women?
+
+```{r }
+
+# Import
+earnings_df <- read.csv("data/lab5_earnings.csv", stringsAsFactors = F)
+
+
+
+
+```
+
+## Part 2: Interaction with Two Dummy Variables
+
+Given the following modeling result, please answer the questions.
+
+![](graph/dummy_reg_table.png){width=70%}
+
+---
+
+### Part 2 Exercise 
+
+  1. What will be the predicted difference in estimated mean earnings for a white person with a college degree and a black person with a college degree? Whose earnings will be higher?
+  
+  2. What will be the predicted difference in estimated mean earnings for a white person with a college degree and a black person without a college degree? Whose earnings will be higher?
+  
+  3. What will be the predicted difference in estimated mean earnings for a white person without a college degree and a black person without a college degree? Whose earnings will be higher?
+  
+  4. What will be the predicted difference in estimated mean earnings for a white person without a college degree and a black person with a college degree? Whose earnings will be higher?
+  
+  5. What will be the predicted difference in estimated mean earnings for a white person with a college degree and a white person without a college degree? Whose earnings will be higher?
+    
+  6. What will be the predicted difference in estimated mean earnings for a black person with a college degree and a black person without a college degree? Whose earnings will be higher?
+  
+  7. How to interpret the interaction coefficient? 
+
+
+## Part 3: Visualize Modeling Results
+
+### 1. Correlation Matrix 
+
+It helpful to get an understanding of how variables are linearly related to each other. This is useful in identifying multicollinearity in the data. However, since correlation only works with numeric data, you need to remove non-numeric and irrelevant variables before you calculate the correlation matrix using `cor()`.
+
+```{r corr, fig.align = "center"}
+
+# If you didn't finished above exercise, run: 
+load("data/earnings_df.RData")
+
+# Remove non-numeric variables
+earnings_df_cat <- earnings_df %>%
+  select(-female, -black, -other)
+
+# Correlation Matrix
+## Set use = "complete.obs" to ignore observations with NAs
+cor(earnings_df_cat, use = "complete.obs")
+
+```
+  
+
+### 2. `stargazer` for displaying modeling results  
+  
+  In displaying regression tables, a commonly used package is `stargazer`, its main function `stargazer()` can format modeling results to neat regression tables. You can set the output type `type = "latex` and copy the output to Overleaf or other LaTeX editors, the code will automatically render to a cleanly formatted regression table.
+  
+```{r }  
+
+# Run models
+m4 <- lm(earn ~ age_recode + edu + female + black + other,
+         data = earnings_df)
+
+m5 <- lm(earn ~ age_recode + edu + female + black + other + edu*female,
+         data = earnings_df)
+
+m6 <- lm(earn ~ age_recode + edu + female + black + other + edu*black + edu*other,
+         data = earnings_df)
+
+# Examine models
+stargazer(m4, m5, m6, 
+          star.char = c("*", "**", "***"),
+          star.cutoffs = c(0.05, 0.01, 0.001),
+          type="text")
+  
+```
+
+### 3. Coefficient Plots
+  Coefficient plot visualizes the coefficients with it's confidence intervals. You can plot it easily using `coefplot()` from the `coefplot` package. There are also other packages that visualize coefficients. You can also visualize them on your own by putting the coefficients together in a dataframe.   
+  
+```{r }  
+
+# Defualt coefficient plot
+coefplot(m5)
+
+# Remove the intercept from the plot
+coefplot(m5, intercept = F)
+
+# The default innerCI is 1, which is 1 se around the point estimate
+# the default outerCI is 2, which is 2 se around the point estimate
+# You can set both to 1.96, which is the 95% confidence interval of betas
+coefplot(m5, intercept = F, innerCI = 1.96, outerCI = 1.96)
+# Or only keep the outerCI = 1.96
+coefplot(m5, intercept = T, innerCI = F, outerCI = 1.96)
+ 
+# You can also change the color, shape, and size of the texts
+# as well as change plot titles and axes labels
+# read the documentation for more
+coefplot(m5, intercept = F, innerCI = F, outerCI = 1.96, 
+         color = "black",                         # customize color
+         title = "Coefficient Plot for Model 5")  # customize title 
+
+
+```
+
+### 4. Plot Predicted Effects
+  
+* We can visualize the predicted effects of key predictors using the `predict()` function in base R.  
+
+* The idea behind this task is to first create a dataframe with values of all the predictors included in the model, with **only the value of your predictor(s) of interest vary within the possible range, whereas other predictors held at their mean.**  
+
+* For example, if we want to examine the effect of **education and gender** on earnings, we create a dataframe with a variable `edu` that varies from 0 to 15 with an interval of 1 (so `edu` = 0, 1, 2, ..., 14, 15), because the possible value of `edu` in our data is integers from 0 to 15 (you can use `summary(your_df)` to check value ranges).
+
+* We repeat this number sequence for another time so that we have **each level of education for both male and female**. So we need to generate `edu` = 0, 1, 2, ..., 14, 15, 0, 1, 2, ..., 14, 15. We use `rep(0:15, 2)` to generate this number sequence.  
+* `rep(x, times)` replicate `x` (a vector or list) for user-defined `times` (in our case, `times = 2`). You can run this in your R console to see what number sequence is returned.  
+
+* Then, we generate a dummy variable `female` that equals to 0 for male and 1 for female.  
+
+* To create a dataframe that have the combination of each level of `edu` and each gender category, we let `female` = 0 for 16 times, and `female` = 1 for 16 times, using `c(rep(0, 16), rep(1, 16))`. You can run this in your R console to see what number sequence is returned.  
+
+* For the rest of the predictors, we fix them at their mean. We add `na.rm = T` in the `mean()` function to specify how we want to deal with NA values. If you don't include `na.rm = T`, `mean()` will return NA if your variable contains NAs. 
+
+```{r pred_IV}
+
+# First, we create a dataframe with all predictor variables
+# with only the key IV varies
+pred_IV <- tibble(edu = rep(0:15, 2)) %>%         #first, create a df with values of your key IV
+  mutate(female = c(rep(0, 16), rep(1, 16)),       #b/c we are looking at interaction effects, 
+                                                   #give gender two values, otherwise fix it at mean
+         age_recode =  mean(earnings_df$age_recode, na.rm = T),   # fix other variabes at mean
+         black = mean(earnings_df$black),
+         other = mean(earnings_df$other))
+
+
+# Examine the df
+head(pred_IV, 20) %>% kbl("html") %>% kable_classic_2(full_width = F)
+
+```
+
+  Now that we have the dataframe `pred_IV` ready for predicting the dependent variable (earning), we can use the R function `predict()` to calculate fitted earning using the regression model and the values specified in each row in `pred_IV`. Then, use `cbind()` to combine this fitted Y value vector with your `pred_IV` for plotting. 
+
+
+```{r plot effect}
+# use `predict` to predict the Y
+predicted_earning <- predict(m5,                      # the model you are using
+                             pred_IV,                # the df you use for predicting
+                             interval = "confidence", # set CI
+                             level = 0.95)
+
+# bind the columns
+pred_result <- cbind(pred_IV, predicted_earning)
+
+# check df
+head(pred_result, 20) %>% kbl("html") %>% kable_classic_2(full_width = F)
+ 
+# Plot
+pred_result %>% 
+  mutate(gender = ifelse(female == 0, "Male", "Female")) %>%       # Covert dummy to character variable
+  ggplot(aes(x = edu, y = fit)) +
+  geom_line(aes(linetype = gender)) +                              # group linetype by gender
+  geom_ribbon(aes(ymin = lwr, ymax = upr, fill = gender), alpha = 0.3) +   # add 95% CI
+  theme_classic() +
+  labs(x = "Years of Education",
+       y = "Predicted Earnings") +
+  ggtitle("Predicted Earnings by Education and Gender",
+          subtitle = "(Modeled with interaction between education and gender)")
+
+
+```
+
