@@ -33,3 +33,6 @@ Office Hours: Tuesday 2PM-4PM [here if meet on Zoom](https://nyu.zoom.us/my/wenh
 
 ### Lab 6 OLS Anatomy, Confounding, Interactions with Dummies (10/11/2024)
 + Lab 6 covers the exogeneity assumption in OLS, its relation with confounding, and interactions with dummy variables.
+
+### Lab 7 Types of Multivariate Relationships, Hetero/Homoskedasticity, Replication Project (10/18/2024)
++ Lab 7 covers the four types of multivariate relationships, the violation of homoskedasticity, robust standard error, and the replication project
