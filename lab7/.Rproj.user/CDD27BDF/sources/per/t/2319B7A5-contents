@@ -1,0 +1,49 @@
+---
+title: "Hoynes_Lab_Presentation"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(pacman)
+p_load(tidyverse, psych, gridExtra, foreign, stargazer, ggcorrplot, kableExtra)
+
+set.seed(1234)
+n = 1000
+
+##Variables: temperature, number of people swimming, ice cream sales
+temp <- rnorm(n, 65, 12)
+summary(temp)
+
+set.seed(1234)
+ppl_swimming <- 100 + temp * 3 + rnorm(n, 0, 100) 
+ppl_swimming <- ceiling(ppl_swimming)
+summary(ppl_swimming)
+
+
+set.seed(1234)
+ice_cream_sold <- 200 + temp * 8  + ppl_swimming*0.5 + rnorm(n, 0, 40) 
+ice_cream_sold <- ceiling(ice_cream_sold)
+summary(ice_cream_sold)
+
+cor(ppl_swimming, ice_cream_sold)^2
+
+df <- tibble(temp, ppl_swimming, ice_cream_sold)
+
+# Research Question: What predicts the amount of ice cream sold on any given day? How does the number of people swimming affect the amount of ice cream sold on any given day?
+
+mod1_correct <- lm(ice_cream_sold ~ temp, data = df)
+
+mod2_incorrect <- lm(ice_cream_sold ~ ppl_swimming, data = df)
+
+mod3 <- lm(ice_cream_sold ~ temp + ppl_swimming, data = df)
+
+stargazer(mod1_correct, mod2_incorrect, mod3, type="text")
+
+# Confounding variables can cause significant problems for social science researchers. In this example, if we did not have data on temperature, we might assume that the number of people swimming explains most of the variation in ice cream sold. In reality temperature explains both. To guard against confounding variables, we ought to rely on previous research, theory, and, in this case, common sense. 
+
+# Question: in all cases, our R-squared is 1 since there is such a high degree of correlation. How might we simulate data that like this that does not have such a high degree of correlation and thus R-squared?
+
+```
+

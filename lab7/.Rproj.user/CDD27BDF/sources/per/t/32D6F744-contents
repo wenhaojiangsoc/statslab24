@@ -1,0 +1,326 @@
+---
+title: "SOC-GA 2332 Intro to Stats Lab 7"
+author: "Di Zhou"
+date: "10/14/2021"
+output:
+  html_document:
+    df_print: paged
+    theme: paper
+    highlight: textmate
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+    toc_depth: 3
+    number_sections: false
+  pdf_document: 
+    toc: true
+---
+
+
+<style type="text/css">
+
+body{ 
+
+    font-size: 18px;
+    line-height: 1.7em;
+    <!-- text-align: justify; -->
+
+}
+
+blockquote {
+    padding: 10px 20px;
+    margin: 0 0 20px;
+    font-size: 18px;
+    border: solid 1px;
+    color: #008080 
+}
+
+h1 { font-size: 36px; }
+
+h2 { font-size: 28px; }
+
+h3 { font-size: 23px; }
+
+</style>
+
+<br>
+
+---
+
+## Housekeeping
+
+- **Problem Set 2** is due on Friday Oct 22nd, 11:59 pm
+- **My future office hour will be changed to Wednesdays 4-5 pm**
+- For Exam 3: Make sure that you review **(1) interactions with dummy variables, (2) different types of multivariant relationships, (3) interpretion of regression coefficients**  
+- Replication Project Part 1 reminder: 
+
+|         Task                       |  Timeline          |
+|------------------------------------|--------------------|
+| **Obtaining the raw data from IPUMS**  | **By Oct. 15th**       |
+| Cleaning the data                  | Oct. 18th to Oct. 22nd   |
+| Replicating Table A1a, Table A1b, and Figure 1 and put in LaTeX | Oct. 25th to Oct. 29th  |
+| Replicating the regression results (Table A2a, Table A2b) and put in LaTeX | Nov. 1st to Nov. 5th |
+| Write the 2-page project report + Wiggle room for formatting and debugging, etc. | Nov. 8th to Nov. 12th |
+
+Note: You don't need to wait until the PS2 due day to submit a screenshot of your data cart. You can email me the screenshot once you are done so that I can help check if you have chosen the correct variables. 
+
+---
+
+## Part 0: Questions about the lecture
+
+
+<br/><br/>
+<br/><br/>
+<br/><br/>
+
+
+---
+
+## Part 1: Presentations: Types of Multivariate Relationship
+
+|         Type        |  Owner          |
+|---------------------|-----------------|
+| Multiple causes     |        Nnamdi         |
+| Mediation           |       Terrence          |
+| Moderation          |       Payton          |
+| Confounding         |        Nick         |
+
+<p align="center">
+![](graph/multivariate_types.png){width=60%}
+</p> 
+
+<br/><br/>
+
+---
+
+## Part 2: Additional Topics in Regression
+
+### 0. Import data and estimate models
+
+First, load packages to your environment. We are using several new packages today. Make sure to install them before running the code.
+
+```{r setup, include=T}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(pacman)
+p_load(tidyverse, stargazer, kableExtra, gridExtra, QuantPsyc, coefplot, sandwich, lmtest, ggthemes)
+
+```
+
+Import the `earnings_df` data (the one we used for lab 5 and 6) and estimate models:
+
+```{r import and model}
+
+# Load cleaned and recoded df
+load("data/earnings_df.RData")
+
+# Examine data
+head(earnings_df, 10) %>% kbl("html") %>% kable_classic_2(full_width = F)
+
+# Estimate Nested Models
+m1 <- lm(earn ~ age_recode, 
+         data = earnings_df)
+
+m2 <- lm(earn ~ age_recode + edu,
+         data = earnings_df)
+
+m3 <- lm(earn ~ age_recode + edu + female,
+         data = earnings_df)
+
+m4 <- lm(earn ~ age_recode + edu + female + black + other,
+         data = earnings_df)
+
+m5 <- lm(earn ~ age_recode + edu + female + black + other + edu*female,
+         data = earnings_df)
+
+# Examine models
+stargazer(m1, m2, m3, m4, m5, 
+          type="text", 
+          omit.stat=c("ser", "f"),
+          star.char = c("*", "**", "***"),
+          star.cutoffs = c(0.05, 0.01, 0.001))
+
+```
+---
+
+### 1. F-test for Nested Models
+
+We can use F-test to compare two regression models. The idea behind the F-test for nested models is to check **how much errors are reduced after adding additional predictors**.  A relatively large reduction in error yields a large F-test statistic and a small P-value. The P-value for F statistics is the right-tail probability.  
+
+  If the F's p-value is significant (smaller than 0.05 for most social science studies), it means that at least one of the additional $\beta_j$ in the full model is not equal to zero.  
+  
+  The F test statistic for nested regression models is calculated by:
+
+$$F = \frac{(SSE_\text{restricted} - SSE_\text{full})/df_1}{SSE_\text{full}/df_2} $$
+where $df_1$ is the number of **additional** predictors added in the full model and $df_2$ is the **residual df for the full model**, which equals $(n - 1 - \text{number of IVs in the complete model})$. The $df$ of the F test statistic is $(df_1, df_2)$.  
+
+For example, according to the equation, we can hand-calculate the F value for `m4` vs `m5`:
+
+```{r F-hand}
+
+# SSE_restricted:
+sse_m4 <- sum(m4$residuals^2)
+
+# SSE_full:
+sse_m5 <- sum(m5$residuals^2)
+
+# We add one additional IV, so:
+df1 = 1
+
+# Residual df for the full model (m5):
+df2 = m5$df.residual
+
+# Calculate F:
+F_stats = ((sse_m4 - sse_m5)/df1)/(sse_m5/df2)
+F_stats
+
+# Check tail probability using `1 - pf()`
+1 - pf(F_stats, df1, df2) 
+```
+  
+  You can also use `anova()` to perform a F-test in R. 
+
+```{r }
+
+anova(m4, m5)
+
+```
+  
+> Discussion Question: What is your null and alternative hypotheses? What's your decision given the F-test result?  
+
+
+---
+
+### 2. Standardized Regression Coefficients
+
+#### Standardized Regression Coefficients
+
+Why sometimes people report standardized regression coefficients? As we covered in the lecture, the size of a regression coefficient depends on **the scale at which the independent and dependent variables are measured**. 
+
+For example, assume that in a regression model the coefficient of population on the national GDP is 0.0001. This means that 1 additional person will lead to 0.0001 increase in the GDP. However, this value does not necessarily imply that the effect of population is less pronounced than other predictors whose coefficients have a larger value. Because the value of the coefficient depends on the measurement unit of the IV. If we now change population to **population in million**, the new coefficient of population will become $0.0001 \cdot 10^6 = 100$. Although the value of the coefficient gets much larger, this increase is caused by a change in the measurement unit, not the actual effect of population. 
+
+Therefore, it is problematic to use the raw value of the regression coefficient as indicators of relative effect size if the predictors in the model have different measurement units. In such scenarios, standardized regression coefficients can help compare the relative effect size of the predictors even if they are measured in different units. 
+
+Standardized coefficients convert both your dependent variable and independent variables to **z-scores**. That is, each of your original (numeric) variables are converted to have a mean of 0 and a standard deviation of 1. Thus, **standardized coefficients tell us the change in $Y$, in $Y$'s standard deviation units, for a one-standard-deviation increase in $X_i$, while holding other $X$s constant**.  
+
+There are two methods of getting standardized regression coefficients in R.
+
+#### Method 1: Use `lm.beta()` from the `QuantPsyc` package
+
+You can get standardized regression coefficients by using the `lm.beta()` function in the `QuantPsyc` package. For example, if we want to get the standardized coefficients for Model 2 (`earn ~ age_recode + edu`):
+
+```{r }
+# Original model
+m2
+
+# Standardized coefficients
+std_m2 <- lm.beta(m2)
+std_m2
+
+```
+
+  
+  But this method will only report the point estimates instead of a comprehensive modeling result. To obtain that, we need to convert all numeric variables to z-scores and estimate regression models based on the transformed data.
+
+#### Method 2: Create Z-scores for All Numeric Variables
+
+For each numeric variables, we create the "standardized variables" by calculating their z-scores: 
+
+$$z = \frac{(x - \overline x)}{s_x}$$
+  
+  For example, we can use `mutate_at()` to covert numeric variables to z-scores in `earnings_df` using the above formula:
+  
+```{r }
+
+# A function that convert a numeric vector to a z-score vector
+get_zscore <- function(x){
+  (x - mean(x, na.rm = T))/sd(x, na.rm = T)
+  }
+
+# Create a df with numeric variables converted to z-score
+earnings_df_std <- earnings_df %>%
+  mutate_at(c("edu", "age_recode", "earn"), get_zscore)
+
+# Examine data
+head(earnings_df_std, 10) %>% kbl("html") %>% kable_classic_2(full_width = F)
+
+# Estimate model
+m2_std_zscore <-  lm(earn ~ age_recode + edu, data = earnings_df_std)
+
+# Compare results
+stargazer(m2, m2_std_zscore, type = "text")
+
+```
+
+
+> Discussion question: Given that **standardized coefficients tell us the change in $Y$, in $Y$'s standard deviation units, for a one-standard-deviation increase in $X_i$, while holding other $X$s constant**, interpret the standardized coefficients of `age_recode` and `edu` in the above modeling result.
+
+---
+
+### 3. Heteroskedasticity and Robust Standard Errors
+
+Heteroskedasticity occurs when the **variance of the error term changes across different values of the explanatory variables**. This violates the basic assumption of OLS, in which the variance of the error term should be constant across different values of the explanatory variables. 
+
+Let us examine two demo bivariate datasets that one satisfies the homoskedasticity assumption whereas the other doesn't. Note that in both datasets, the "true" effect of `edu` on `earn` is 10. The only difference is that in `hom_df`, the error term has a constant variance across all observations, whereas in `het_df`, the error term has a non-constant variance. 
+
+$$Y = 10 + 10*\text{edu} + \epsilon$$
+
+```{r }
+
+# Import demo dataframes
+load(file = "data/hom_df.RData")
+load(file = "data/het_df.RData")
+
+# Plot data
+hom_df %>%
+  ggplot(aes(x = edu, y = earn)) +
+  geom_point(shape = 1, alpha = 0.7) +
+  geom_smooth(method = "lm") +
+  labs(title = "Scatterplot of Simulated Data with Homoskedasticity") +
+  theme_classic()
+
+het_df %>%
+  ggplot(aes(x = edu, y = earn)) +
+  geom_point(shape = 1, alpha = 0.7) +
+  geom_smooth(method = "lm") +
+  labs(title = "Scatterplot of Simulated Data with Heteroskedasticity") +
+  theme_classic()
+
+```
+
+From the scatterplot we can already see the unequal variance in the `het_df`. Now we estimate OLS models and examine the result of our model and also the diagnostic plots (fitted Y v. residual). 
+
+```{r }
+
+# Fit models:
+m_hom <- lm(earn ~ edu, hom_df)
+m_het <- lm(earn ~ edu, het_df)
+
+stargazer(m_hom, m_het, type = "text")
+
+```
+
+#### Robust Standard Errors
+
+If you have a reason to believe that your dataset violates the assumption of homoskedasticity, you can use the packages `sandwich` and `lmtest` to get robust standard errors. 
+
+```{r }
+
+coeftest(m_hom, vcov = sandwich)
+coeftest(m_het, vcov = sandwich)
+
+```
+
+> Discussion Question: How does heteroskedasticity affect our estimate of the regression coefficients? 
+
+---
+
+### 4. Clustering of Errors 
+
+One of the basic OLS assumptions is that the error term is independently distributed across observations. i.e.: $$\text{Corr}(\epsilon_i, \epsilon_j) = 0$$
+
+But this assumption could be violated when your data have a "nested" structure, or your data is ordered by time and the trend is highly correlated between time unit. In such cases, you should employ other modeling techniques to address correlated errors. For example, you can use multilevel modeling for nested data, and longitudinal data analysis techniques for time-series data.
+
+
+
+

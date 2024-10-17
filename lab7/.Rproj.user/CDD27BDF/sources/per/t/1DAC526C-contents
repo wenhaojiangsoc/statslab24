@@ -1,0 +1,88 @@
+---
+title: "W7 Lab Presentation"
+author: "Terrence Chen"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# install.packages("fGarch")
+# install.packages("stargazer")
+library("fGarch")
+library("stargazer")
+```
+
+
+## 1. What are the variables in your dataset? What are their “true” relationship?
+
+Mother's years of education, child's years of education, and child's income. The true relationship is that mother's years of education affects child's income through child's years of education.
+
+## 2. Show your code of simulation
+
+```{r}
+# simulate mother's education and plot
+set.seed(12345)
+mother_edu <- rpois(500, 10)
+hist(mother_edu)
+
+# simulate child's education and plot
+set.seed(54321)
+child_edu <- 2 + mother_edu + rpois(500, 3)
+hist(child_edu)
+
+# simulate child's income and plot
+set.seed(888)
+child_income <- 25000 + 500*child_edu + 50*mother_edu + rsnorm(500,0,5000,2.5)
+hist(child_income)
+hist(log(child_income))
+
+# create the dataset
+data <- data.frame(mother_edu, child_edu, child_income)
+
+```
+
+## 3. Assuming there is a researcher who obtained this dataset, what would be a meaningful research question that they can ask?
+
+Does mother's education affect child's income? If so, is this effect mediated by child's education?
+
+
+## 4. Estimate a model based on that research question.
+
+```{r}
+m1 <- lm( log(child_income) ~ mother_edu, data)
+m2 <- lm( child_edu ~ mother_edu , data)
+m3 <- lm( child_income ~ child_edu, data)
+stargazer(m1, m2, m3, type="text")
+
+```
+
+##### (1) Regression model of child's income on mother's education, without child's education (Model 1) (Answering "Does mother's education affect child's income?")
+
+In model 1, The coefficient of mother_edu is siginificant, which suggests that mother's education has a siginificant effect on child's income.
+
+##### (2) Regression model of child's education on mother's education (Model 2), and of child's income on child's education (Model 3)  (Examining the mediating role of child's education)
+
+Model 2 shows that mother's education has a siginificant effect on child's education, and model 3 shows that child's education has a significant effect on child's income. Taken together, this result suggests that child's education plays a mediating role in the relationship between mother's education and child's income.
+
+## 5. Show what would happen if the researcher failed to account for the “true” data-generating process in their models. (This can be a comparison of modeling results using different modeling specifications, a comparison of the model estimates to the “true” parameter values, and/or any other approaches that you think can effectively answer this question.)
+
+If researchers simultaneously put mother's education and child's education into the model, they will run the regression model below (Model 4):
+
+```{r}
+# Regression model of child's income on mother's education, with child's education
+m4 <- lm( log(child_income) ~ mother_edu + child_edu, data)
+stargazer(m4, type="text")
+```
+
+According to the result, researcher might conclude that mother's education has no significant effects on child's income. However, this is not an accurate conclusion. Although the direct effect of mother's education on child's income is not significant, model 2 and 3 have shown that mother's education has an indirect effect on child's income through child's education, i.e. child's education plays a mediating role between the two variables.
+
+The correct way to interpret model 4 is to compare it with model 1. The fact that mother's education has significant effect on child's income without controlling for child's education, and that the effect disappears when controlling for child's education, also suggest that child's education plays a mediating role.
+
+
+## 6. Any conclusion/thoughts/questions you have about the exercise.
+
+Researchers should really be careful when (not) including controls. Before putting variables into analysis, researchers should alway construct the theoretical relationship between variables; otherwise, judgement based merely on the regression models might lead to severe errors.
+

@@ -1,0 +1,4 @@
+"0","library(pacman)"
+"0","p_load(tidyverse, stargazer, kableExtra, gridExtra, "
+"0","       QuantPsyc, coefplot, sandwich, lmtest, ggthemes,"
+"0","       ggpubr)"

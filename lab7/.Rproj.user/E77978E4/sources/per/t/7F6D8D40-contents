@@ -1,0 +1,774 @@
+setwd("/Users/wenhao/Library/CloudStorage/Dropbox/RA Paula/Misc")
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+
+## all division
+fs <- read.csv("faculty_student.csv")
+
+fs %>%
+  pivot_longer(cols = c(Fall.2017,Fall.2018,Fall.2019,Fall.2020,Fall.2021,Fall.2022), 
+             names_to = "year", 
+             values_to = "share") %>%
+  mutate(year = str_remove(year, "Fall.")) %>%
+  rename(category = X) %>%
+  mutate(division = unlist(strsplit(category, " %"))[seq(1,95,2)],
+         division = paste(division, "Division")) %>%
+  mutate(category = case_when(
+    grepl("Faculty",category) ~ "Faculty (standing)",
+    grepl("Majors",category) ~ "Majors"
+  )) %>%
+  mutate(division = factor(division, levels=c("Social Science Division","Science Division",
+                                              "A&H Division","Engineering Division"))) %>%
+  ggplot(aes(x=year,y=share,group=category,color=category)) +
+  geom_point(size=1.5) +
+  geom_line() +
+  ylim(5,40) +
+  ylab("Percent") +
+  xlab("Year (Fall)") +
+  scale_colour_manual(values=c("red2","blue3")) +
+  theme_bw() +
+  facet_wrap(vars(division)) +
+  theme(legend.title=element_blank(),
+        legend.position="right",
+        legend.margin=margin(2,4,5,3),
+        legend.box.margin=margin(-10,-10,-10,-10),
+        text=element_text(family="Times"),
+        axis.title.x = element_text(size=11),
+        axis.title.y = element_text(size=11),
+        axis.text = element_text(size=11),
+        legend.text = element_text(size=12),
+        strip.text = element_text(size=11)
+        )
+
+ggsave("faculty_student.png",width = 7, height = 4)
+
+fs %>%
+  pivot_longer(cols = c(Fall.2017,Fall.2018,Fall.2019,Fall.2020,Fall.2021,Fall.2022), 
+               names_to = "year", 
+               values_to = "share") %>%
+  mutate(year = str_remove(year, "Fall.")) %>%
+  rename(category = X) %>%
+  mutate(division = unlist(strsplit(category, " %"))[seq(1,95,2)],
+         division = paste(division, "Division")) %>%
+  mutate(category = case_when(
+    grepl("Faculty",category) ~ "Faculty (standing)",
+    grepl("Majors",category) ~ "Majors"
+  )) %>%
+  mutate(division = factor(division, levels=c("Social Science Division","Science Division",
+                                              "A&H Division","Engineering Division"))) %>%
+  mutate(division = case_when(
+    division != "Social Science Division" ~ "Other Divisions",
+    .default = "Social Science Division"
+  )) %>%
+  mutate(division = factor(division, levels=c("Social Science Division","Other Divisions"))) %>%
+  mutate(year = as.numeric(year)) %>% group_by(year,division,category) %>% mutate(share = sum(share)) %>%
+  ggplot(aes(x=year,y=share,group=category,color=category)) +
+  geom_point(size=1.5) +
+  geom_line() +
+  ylab("Percent") +
+  xlab("Year (Fall)") +
+  scale_colour_manual(values=c("red2","blue3")) +
+  theme_bw() +
+  facet_wrap(vars(division)) +
+  theme(legend.title=element_blank(),
+        legend.position="right",
+        legend.margin=margin(2,4,5,3),
+        legend.box.margin=margin(-10,-10,-10,-10),
+        text=element_text(family="Times"),
+        axis.title.x = element_text(size=11),
+        axis.title.y = element_text(size=11),
+        axis.text = element_text(size=11),
+        legend.text = element_text(size=12),
+        strip.text = element_text(size=11)
+  )
+ggsave("faculty_student_ss.png",width = 7, height = 3)
+
+## social science
+ss <- read.csv("social_science.csv")
+
+ss %>%
+  pivot_longer(cols = c(Fall.2017,Fall.2018,Fall.2019,Fall.2020,Fall.2021,Fall.2022), 
+               names_to = "year", 
+               values_to = "share") %>%
+  mutate(year = str_remove(year, "Fall.")) %>%
+  rename(category = X) %>%
+  mutate(division = unlist(strsplit(category, " %"))[seq(1,95,2)]) %>%
+  mutate(category = case_when(
+    grepl("Faculty",category) ~ "Faculty (standing)",
+    grepl("Majors",category) ~ "Majors"
+  )) %>%
+  mutate(division = factor(division, levels=c("Economics","Political Science","SRPP","Legal Studies (SS+A&H)"))) %>%
+  ggplot(aes(x=year,y=share,group=category,color=category)) +
+  geom_point(size=1.5) +
+  geom_line() +
+  ylim(0,20) +
+  ylab("Percent") +
+  xlab("Year (Fall)") +
+  scale_colour_manual(values=c("red2","blue3")) +
+  theme_bw() +
+  facet_wrap(vars(division)) +
+  theme(legend.title=element_blank(),
+        legend.position="right",
+        legend.margin=margin(2,4,5,3),
+        legend.box.margin=margin(-10,-10,-10,-10),
+        text=element_text(family="Times"),
+        axis.title.x = element_text(size=11),
+        axis.title.y = element_text(size=11),
+        axis.text = element_text(size=11),
+        legend.text = element_text(size=12),
+        strip.text = element_text(size=11)
+  )
+
+ggsave("social science.png",width = 7, height = 4)
+
+## science
+ss <- read.csv("science.csv")
+
+ss %>%
+  pivot_longer(cols = c(Fall.2017,Fall.2018,Fall.2019,Fall.2020,Fall.2021,Fall.2022), 
+               names_to = "year", 
+               values_to = "share") %>%
+  mutate(year = str_remove(year, "Fall.")) %>%
+  rename(category = X) %>%
+  mutate(division = unlist(strsplit(category, " % of "))[seq(1,95,2)]) %>%
+  mutate(category = case_when(
+    grepl("Faculty",category) ~ "Faculty (standing)",
+    grepl("Majors",category) ~ "Majors"
+  )) %>%
+  mutate(division = factor(division, levels=c("Biology","Psychology","Mathematics","Computer Science"))) %>%
+  ggplot(aes(x=year,y=share,group=category,color=category)) +
+  geom_point(size=1.5) +
+  geom_line() +
+  ylim(0,20) +
+  ylab("Percent") +
+  xlab("Year (Fall)") +
+  scale_colour_manual(values=c("red2","blue3")) +
+  theme_bw() +
+  facet_wrap(vars(division)) +
+  theme(legend.title=element_blank(),
+        legend.position="right",
+        legend.margin=margin(2,4,5,3),
+        legend.box.margin=margin(-10,-10,-10,-10),
+        text=element_text(family="Times"),
+        axis.title.x = element_text(size=11),
+        axis.title.y = element_text(size=11),
+        axis.text = element_text(size=11),
+        legend.text = element_text(size=12),
+        strip.text = element_text(size=11)
+  )
+
+ggsave("science.png",width = 7, height = 4)
+
+
+## traffic
+traffic <- read.csv("traffic.csv")
+
+traffic %>%
+  pivot_longer(cols = c(AY.2018.19,AY.2019.20,AY.2020.21,AY.2021.22,AY.2022.23), 
+               names_to = "year", 
+               values_to = "share") %>%
+  mutate(year = str_remove(year, "AY.20"),
+         year = gsub("\\.", "-", year)) %>%
+  rename(category = X) %>%
+  mutate(division = unlist(strsplit(category, " %"))[seq(1,120,2)]) %>%
+  mutate(category = case_when(
+    grepl("Faculty",category) ~ "Faculty (standing)",
+    grepl("Non-Core",category) ~ "Traffic (non-core)",
+    grepl("Core",category) ~ "Traffic (including core)",
+  )) %>%
+  mutate(division = paste(division, "Division"),
+         division = factor(division, levels=c("Social Science Division","Science Division",
+                                              "A&H Division","Engineering Division"))) %>%
+  mutate(division = case_when(
+    division != "Social Science Division" ~ "Other Divisions",
+    .default = "Social Science Division"
+  )) %>%
+  mutate(division = factor(division, levels=c("Social Science Division","Other Divisions"))) %>%
+  group_by(year,division,category) %>% mutate(share = sum(share)) %>%
+  ggplot(aes(x=year,y=share,group=category,color=category)) +
+  geom_point(size=1.5) +
+  geom_line() +
+  ylab("Percent") +
+  xlab("Year (AY)") +
+  scale_colour_manual(values=c("red2","blue3","green3"),
+                      labels=c("Faculty (standing)","Traffic (incl. core)","Traffic (non-core)")) +
+  theme_bw() +
+  facet_wrap(vars(division)) +
+  theme(legend.title=element_blank(),
+        legend.position="right",
+        legend.margin=margin(2,4,5,3),
+        legend.box.margin=margin(-10,-10,-10,-10),
+        text=element_text(family="Times"),
+        axis.title.x = element_text(size=11),
+        axis.title.y = element_text(size=11),
+        axis.text = element_text(size=11),
+        legend.text = element_text(size=12),
+        strip.text = element_text(size=11)
+  )
+
+ggsave("traffic_ss.png",width = 7, height = 3)
+
+traffic %>%
+  pivot_longer(cols = c(AY.2018.19,AY.2019.20,AY.2020.21,AY.2021.22,AY.2022.23), 
+               names_to = "year", 
+               values_to = "share") %>%
+  mutate(year = str_remove(year, "AY.20"),
+         year = gsub("\\.", "-", year)) %>%
+  rename(category = X) %>%
+  mutate(division = unlist(strsplit(category, " %"))[seq(1,120,2)]) %>%
+  mutate(category = case_when(
+    grepl("Faculty",category) ~ "Faculty (standing)",
+    grepl("Non-Core",category) ~ "Traffic (non-core)",
+    grepl("Core",category) ~ "Traffic (including core)",
+  )) %>%
+  filter(category!="Traffic (including core)") %>%
+  mutate(division = paste(division, "Division"),
+         division = factor(division, levels=c("Social Science Division","Science Division",
+                                              "A&H Division","Engineering Division"))) %>%
+  ggplot(aes(x=year,y=share,group=category,color=category)) +
+  geom_point(size=1.5) +
+  geom_line() +
+  ylab("Percent") +
+  xlab("Year (AY)") +
+  ylim(5,40) +
+  scale_colour_manual(values=c("red2","green3"),
+                      labels=c("Faculty (standing)","Traffic (non-core)")) +
+  theme_bw() +
+  facet_wrap(vars(division)) +
+  theme(legend.title=element_blank(),
+        legend.position="right",
+        legend.margin=margin(2,4,5,3),
+        legend.box.margin=margin(-10,-10,-10,-10),
+        text=element_text(family="Times"),
+        axis.title.x = element_text(size=11),
+        axis.title.y = element_text(size=11),
+        axis.text = element_text(size=11),
+        legend.text = element_text(size=12),
+        strip.text = element_text(size=11)
+  )
+
+ggsave("traffic_exclcore.png",width = 7, height = 4)
+
+
+## number of majors
+major_division <-
+  read.csv("major_division.csv")
+
+major_division_raw <-
+  major_division %>%
+  pivot_longer(cols = c(Fall.2017,Fall.2018,Fall.2019,Fall.2020,Fall.2021,Fall.2022), 
+               names_to = "year", 
+               values_to = "share") %>%
+  mutate(year = str_remove(year, "Fall.")) %>%
+  mutate(division = factor(division, levels=c("A&H","Engineering",
+                                              "Science",
+                                              "Social Science"
+                                              ))) %>%
+  mutate(division = case_when(
+    division != "Social Science" ~ "Other Divisions",
+    .default = "Social Science"
+  )) %>%
+  group_by(year,division) %>% mutate(share = sum(share)) %>%
+  ggplot(aes(x=year,y=share,group=division,color=division)) +
+  geom_point(size=1.5) +
+  geom_line() +
+  ylab("# of Declared Majors") +
+  xlab("Year (Fall)") +
+  ggtitle("# of Decleared Majors") +
+  scale_colour_manual(values=c("red2","yellow3")) +
+  ## scale_colour_manual(values=c("red2","blue3","green4","yellow3")) +
+  theme_bw() +
+  theme(legend.title=element_blank(),
+        legend.position="right",
+        legend.margin=margin(2,4,5,3),
+        text=element_text(family="Times"),
+        axis.title.x = element_text(size=11),
+        axis.title.y = element_text(size=11),
+        axis.text = element_text(size=11),
+        legend.text = element_text(size=12),
+        strip.text = element_text(size=11),
+        plot.title = element_text(hjust=0.5)
+  )
+
+major_division_percent <-
+  major_division %>%
+  pivot_longer(cols = c(Fall.2017,Fall.2018,Fall.2019,Fall.2020,Fall.2021,Fall.2022), 
+               names_to = "year", 
+               values_to = "share") %>%
+  mutate(year = str_remove(year, "Fall.")) %>%
+  group_by(year) %>% mutate(share = share/sum(share)) %>%
+  mutate(division = factor(division, levels=c("A&H","Engineering",
+                                              "Science",
+                                              "Social Science"
+  ))) %>%
+  mutate(division = case_when(
+    division != "Social Science" ~ "Other Divisions",
+    .default = "Social Science"
+  )) %>%
+  group_by(year,division) %>% mutate(share = sum(share)) %>%
+  ggplot(aes(x=year,y=share,group=division,color=division)) +
+  geom_point(size=1.5) +
+  geom_line() +
+  ylab("% of Declared Majors") +
+  xlab("Year (Fall)") +
+  ggtitle("% of Decleared Majors") +
+  scale_colour_manual(values=c("red2","yellow3")) +
+  ## scale_colour_manual(values=c("red2","blue3","green4","yellow3")) +
+  theme_bw() +
+  theme(legend.title=element_blank(),
+        legend.position="right",
+        legend.margin=margin(2,4,5,3),
+        text=element_text(family="Times"),
+        axis.title.x = element_text(size=11),
+        axis.title.y = element_text(size=11),
+        axis.text = element_text(size=11),
+        legend.text = element_text(size=12),
+        strip.text = element_text(size=11),
+        plot.title = element_text(hjust=0.5)
+  )
+
+ggarrange(major_division_raw,
+          major_division_percent,
+          legend = "right",
+          common.legend = T)
+
+ggsave("major_division_ss.png",width = 8, height = 3)
+
+
+## number of traffic of core
+core_division <-
+  read.csv("core_division.csv")
+
+core_division_raw <-
+  core_division %>%
+  pivot_longer(cols = c(X2018,X2019,X2020,X2021,X2022), 
+               names_to = "year", 
+               values_to = "share") %>%
+  mutate(year = str_remove(year, "X")) %>%
+  mutate(division = factor(division, levels=c("A&H","Engineering",
+                                              "Science",
+                                              "Social Science"
+  ))) %>%
+  mutate(division = case_when(
+    division != "Social Science" ~ "Other Divisions",
+    .default = "Social Science"
+  )) %>%
+  mutate(year = as.numeric(year)) %>% group_by(year,division) %>% mutate(share = sum(share)) %>%
+  distinct(division, year, share, .keep_all = TRUE) %>%
+  ggplot(aes(x=year,y=share,group=division,color=division)) +
+  geom_point(size=1.5) +
+  geom_line(lty="dashed") +
+  geom_line(data = core_division %>%
+              pivot_longer(cols = c(X2018,X2019,X2020,X2021,X2022), 
+                           names_to = "year", 
+                           values_to = "share") %>%
+              mutate(year = str_remove(year, "X")) %>%
+              mutate(division = factor(division, levels=c("A&H","Engineering",
+                                                          "Science",
+                                                          "Social Science"
+              ))) %>%
+              mutate(division = case_when(
+                division != "Social Science" ~ "Other Divisions",
+                .default = "Social Science"
+              )) %>%
+              mutate(year = as.numeric(year)) %>% 
+              group_by(year,division) %>% 
+              mutate(share = sum(share)) %>%
+              mutate(year = as.numeric(year)) %>%
+              filter(year <= 2021), lty="solid") +
+  ylab("Traffic in Core Classes by Division") +
+  xlab("Year") +
+  scale_colour_manual(values=c("red2","yellow3")) +
+  theme_bw() +
+  ggtitle("Total Traffic in Core Classes") +
+  theme(legend.title=element_blank(),
+        legend.position="right",
+        legend.margin=margin(2,4,5,3),
+        text=element_text(family="Times"),
+        axis.title.x = element_text(size=11),
+        axis.title.y = element_text(size=11),
+        axis.text = element_text(size=11),
+        legend.text = element_text(size=12),
+        strip.text = element_text(size=11),
+        plot.title = element_text(hjust=0.5)
+  )
+
+core_division_percent <-
+  core_division %>%
+  pivot_longer(cols = c(X2018,X2019,X2020,X2021,X2022), 
+               names_to = "year", 
+               values_to = "share") %>%
+  mutate(year = str_remove(year, "X")) %>%
+  mutate(division = factor(division, levels=c("A&H","Engineering",
+                                              "Science",
+                                              "Social Science"
+  ))) %>%
+  mutate(division = case_when(
+    division != "Social Science" ~ "Other Divisions",
+    .default = "Social Science"
+  )) %>%
+  mutate(year = as.numeric(year)) %>% group_by(year,division) %>% mutate(share = sum(share)) %>%
+  distinct(division, year, share, .keep_all = TRUE) %>%
+  group_by(year) %>%
+  mutate(share=share/sum(share)) %>%
+  ggplot(aes(x=year,y=share,group=division,color=division)) +
+  geom_point(size=1.5) +
+  geom_line(lty="dashed") +
+  geom_line(data = core_division %>%
+              pivot_longer(cols = c(X2018,X2019,X2020,X2021,X2022), 
+                           names_to = "year", 
+                           values_to = "share") %>%
+              mutate(year = str_remove(year, "X")) %>%
+              mutate(division = factor(division, levels=c("A&H","Engineering",
+                                                          "Science",
+                                                          "Social Science"
+              ))) %>%
+              mutate(division = case_when(
+                division != "Social Science" ~ "Other Divisions",
+                .default = "Social Science"
+              )) %>%
+              mutate(year = as.numeric(year)) %>% 
+              group_by(year,division) %>% 
+              mutate(share = sum(share)) %>%
+              mutate(year = as.numeric(year)) %>%
+              distinct(division, year, share, .keep_all = TRUE) %>%
+              group_by(year) %>%
+              mutate(share = share/sum(share)) %>%
+              filter(year <= 2021), lty="solid") +
+  ylab("% Traffic in Core Classes by Division") +
+  xlab("Year") +
+  scale_colour_manual(values=c("red2","yellow3")) +
+  theme_bw() +
+  ggtitle("% Traffic in Core Classes") +
+  theme(legend.title=element_blank(),
+        legend.position="right",
+        legend.margin=margin(2,4,5,3),
+        text=element_text(family="Times"),
+        axis.title.x = element_text(size=11),
+        axis.title.y = element_text(size=11),
+        axis.text = element_text(size=11),
+        legend.text = element_text(size=12),
+        strip.text = element_text(size=11),
+        plot.title = element_text(hjust=0.5)
+  )
+
+ggarrange(core_division_raw,
+          core_division_percent,
+          legend = "right",
+          common.legend = T)
+
+ggsave("core_division_ss.png",width = 8, height = 3)
+
+
+## number of majors T5
+major_program <-
+  read.csv("major_program.csv")
+
+major <-
+  major_program %>%
+  pivot_longer(cols = c(Fall.2017,Fall.2018,Fall.2019,Fall.2020,Fall.2021,Fall.2022), 
+               names_to = "year", 
+               values_to = "share") %>%
+  mutate(year = str_remove(year, "Fall.")) %>%
+  rename(category = X) %>%
+  filter(year==2022) %>%
+  arrange(desc(share))
+major <- major$category
+
+major_program_raw <-
+  major_program %>%
+  pivot_longer(cols = c(Fall.2017,Fall.2018,Fall.2019,Fall.2020,Fall.2021,Fall.2022), 
+               names_to = "year", 
+               values_to = "share") %>%
+  mutate(year = str_remove(year, "Fall.")) %>%
+  rename(category = X) %>%
+  mutate(category = factor(category,level = major)) %>%
+  ggplot(aes(x=year,y=share,group=category,color=category)) +
+  geom_point(size=1.5) +
+  geom_line() +
+  ylab("# of Declared Majors") +
+  xlab("Year (Fall)") +
+  ggtitle("# of Declared Majors") +
+  scale_colour_manual(values=c("red2","blue3","green4","yellow3","grey30")) +
+  theme_bw() +
+  theme(legend.title=element_blank(),
+        legend.position="right",
+        legend.margin=margin(2,4,5,3),
+        text=element_text(family="Times"),
+        axis.title.x = element_text(size=11),
+        axis.title.y = element_text(size=11),
+        axis.text = element_text(size=11),
+        legend.text = element_text(size=12),
+        strip.text = element_text(size=11),
+        plot.title = element_text(hjust=0.5)
+  )
+
+major_program_percent <-
+  major_program %>%
+  pivot_longer(cols = c(Fall.2017,Fall.2018,Fall.2019,Fall.2020,Fall.2021,Fall.2022), 
+               names_to = "year", 
+               values_to = "share") %>%
+  mutate(year = str_remove(year, "Fall.")) %>%
+  rename(category = X) %>%
+  group_by(year) %>%
+  mutate(share = share/sum(share)) %>%
+  mutate(category = factor(category,level = major)) %>%
+  ggplot(aes(x=year,y=share,group=category,color=category)) +
+  geom_point(size=1.5) +
+  geom_line() +
+  ylab("% of Declared Majors") +
+  xlab("Year (Fall)") +
+  scale_colour_manual(values=c("red2","blue3","green4","yellow3","grey30")) +
+  ggtitle("% of Declared Majors") +
+  theme_bw() +
+  theme(legend.title=element_blank(),
+        legend.position="right",
+        legend.margin=margin(2,4,5,3),
+        text=element_text(family="Times"),
+        axis.title.x = element_text(size=11),
+        axis.title.y = element_text(size=11),
+        axis.text = element_text(size=11),
+        legend.text = element_text(size=12),
+        strip.text = element_text(size=11),
+        plot.title = element_text(hjust=0.5)
+  )
+
+ggarrange(major_program_raw,
+          major_program_percent,
+          legend = "right",
+          common.legend = T)
+
+ggsave("major_program.png",width = 8, height = 3)
+
+## number of majors T10
+major_program <-
+  read.csv("major_program_t10.csv")
+
+major <-
+  major_program %>%
+  pivot_longer(cols = c(Fall.2017,Fall.2018,Fall.2019,Fall.2020,Fall.2021,Fall.2022), 
+               names_to = "year", 
+               values_to = "share") %>%
+  mutate(year = str_remove(year, "Fall.")) %>%
+  rename(category = X) %>%
+  filter(year==2022) %>%
+  arrange(desc(share))
+major <- major$category
+
+major_program_raw <-
+  major_program %>%
+  pivot_longer(cols = c(Fall.2017,Fall.2018,Fall.2019,Fall.2020,Fall.2021,Fall.2022), 
+               names_to = "year", 
+               values_to = "share") %>%
+  mutate(year = str_remove(year, "Fall.")) %>%
+  rename(category = X) %>%
+  mutate(category = factor(category,level=major)) %>%
+  ggplot(aes(x=year,y=share,group=category,color=category)) +
+  geom_point(size=1.5) +
+  geom_line() +
+  ylab("# of Declared Majors") +
+  xlab("Year (Fall)") +
+  ggtitle("# of Declared Majors") +
+  scale_colour_manual(values=c("red2","blue3","green4","yellow3","black",
+                               "orange3","purple","lightblue","grey70","pink")) +
+  theme_bw() +
+  theme(legend.title=element_blank(),
+        legend.position="right",
+        legend.margin=margin(2,4,5,3),
+        text=element_text(family="Times"),
+        axis.title.x = element_text(size=11),
+        axis.title.y = element_text(size=11),
+        axis.text = element_text(size=11),
+        legend.text = element_text(size=12),
+        strip.text = element_text(size=11),
+        plot.title = element_text(hjust=0.5)
+  )
+
+major_program_percent <-
+  major_program %>%
+  pivot_longer(cols = c(Fall.2017,Fall.2018,Fall.2019,Fall.2020,Fall.2021,Fall.2022), 
+               names_to = "year", 
+               values_to = "share") %>%
+  mutate(year = str_remove(year, "Fall.")) %>%
+  rename(category = X) %>%
+  group_by(year) %>%
+  mutate(share = share/sum(share)) %>%
+  mutate(category = factor(category,level=major)) %>%
+  ggplot(aes(x=year,y=share,group=category,color=category)) +
+  geom_point(size=1.5) +
+  geom_line() +
+  ylab("% of Declared Majors") +
+  xlab("Year (Fall)") +
+  scale_colour_manual(values=c("red2","blue3","green4","yellow3","black",
+                               "orange3","purple","lightblue","grey70","pink")) +
+  ggtitle("% of Declared Majors") +
+  theme_bw() +
+  theme(legend.title=element_blank(),
+        legend.position="right",
+        legend.margin=margin(2,4,5,3),
+        text=element_text(family="Times"),
+        axis.title.x = element_text(size=11),
+        axis.title.y = element_text(size=11),
+        axis.text = element_text(size=11),
+        legend.text = element_text(size=12),
+        strip.text = element_text(size=11),
+        plot.title = element_text(hjust=0.5)
+  )
+
+ggarrange(major_program_raw,
+          major_program_percent,
+          legend = "right",
+          common.legend = T)
+
+ggsave("major_program_t10.png",width = 8, height = 3)
+
+## number of faculty
+faculty_division <-
+  read.csv("faculty_division.csv")
+
+faculty_division_raw <-
+  faculty_division %>%
+  pivot_longer(cols = c(Fall.2017,Fall.2018,Fall.2019,Fall.2020,Fall.2021,Fall.2022), 
+               names_to = "year", 
+               values_to = "share") %>%
+  mutate(year = str_remove(year, "Fall.")) %>%
+  mutate(division = factor(division, levels=c("A&H","Engineering",
+                                              "Science","Social Science"
+                                              ))) %>%
+  mutate(division = case_when(
+    division != "Social Science" ~ "Other Divisions",
+    .default = "Social Science"
+  )) %>%
+  mutate(year = as.numeric(year)) %>% group_by(year,division) %>% mutate(share = sum(share)) %>%
+  distinct(division, year, share, .keep_all = TRUE) %>%
+  ggplot(aes(x=year,y=share,group=division,color=division)) +
+  geom_point(size=1.5) +
+  geom_line() +
+  ggtitle("# of Standing Faculty") +
+  ylab("# of Standing Faculty") +
+  xlab("Year (Fall)") +
+  scale_colour_manual(values=c("red2","yellow3")) +
+  theme_bw() +
+  theme(legend.title=element_blank(),
+        legend.position="right",
+        legend.margin=margin(2,4,5,3),
+        text=element_text(family="Times"),
+        axis.title.x = element_text(size=11),
+        axis.title.y = element_text(size=11),
+        axis.text = element_text(size=11),
+        legend.text = element_text(size=12),
+        strip.text = element_text(size=11),
+        plot.title = element_text(hjust=0.5)
+  )
+
+faculty_division_percent <-
+  faculty_division %>%
+  pivot_longer(cols = c(Fall.2017,Fall.2018,Fall.2019,Fall.2020,Fall.2021,Fall.2022), 
+               names_to = "year", 
+               values_to = "share") %>%
+  group_by(year) %>% mutate(share = share/sum(share)) %>%
+  mutate(year = str_remove(year, "Fall.")) %>%
+  mutate(division = factor(division, levels=c("A&H","Engineering",
+                                              "Science","Social Science"
+                                              ))) %>%
+  mutate(division = case_when(
+    division != "Social Science" ~ "Other Divisions",
+    .default = "Social Science"
+  )) %>%
+  mutate(year = as.numeric(year)) %>% group_by(year,division) %>% mutate(share = sum(share)) %>%
+  ggplot(aes(x=year,y=share,group=division,color=division)) +
+  geom_point(size=1.5) +
+  geom_line() +
+  ylab("% of Standing Faculty") +
+  xlab("Year (Fall)") +
+  ggtitle("% of Standing Faculty") +
+  scale_colour_manual(values=c("red2","yellow3")) +
+  theme_bw() +
+  theme(legend.title=element_blank(),
+        legend.position="right",
+        legend.margin=margin(2,4,5,3),
+        text=element_text(family="Times"),
+        axis.title.x = element_text(size=11),
+        axis.title.y = element_text(size=11),
+        axis.text = element_text(size=11),
+        legend.text = element_text(size=12),
+        strip.text = element_text(size=11),
+        plot.title = element_text(hjust=0.5)
+  )
+
+ggarrange(faculty_division_raw,
+          faculty_division_percent,
+          common.legend = TRUE,
+          legend = "right")
+
+ggsave("faculty_division_ss.png",width = 8, height = 3)
+
+
+## traffic
+traffic <- read.csv("division_traffic.csv")
+
+traffic %>%
+  pivot_longer(cols = c(AY.2018.19,AY.2019.20,AY.2020.21,AY.2021.22,AY.2022.23), 
+               names_to = "year", 
+               values_to = "share") %>%
+  mutate(year = str_remove(year, "AY.20"),
+         year = gsub("\\.", "-", year)) %>%
+  mutate(division = case_when(
+    division != "Social Science" ~ "Other Divisions",
+    .default = "Social Science"
+  )) %>%
+  group_by(year,division,core) %>% mutate(share = sum(share)) %>%
+  distinct(division, year, share, .keep_all = TRUE) %>%
+  ggplot(aes(x=year,y=share,group=division,color=division)) +
+  geom_point(size=1.5) +
+  geom_line() +
+  ylab("# of Traffic") +
+  xlab("Year (AY)") +
+  scale_colour_manual(values=c("red2","yellow3")) +
+  theme_bw() +
+  facet_wrap(vars(core)) +
+  theme(legend.title=element_blank(),
+        legend.position="right",
+        legend.margin=margin(2,4,5,3),
+        legend.box.margin=margin(-10,-10,-10,-10),
+        text=element_text(family="Times"),
+        axis.title.x = element_text(size=11),
+        axis.title.y = element_text(size=11),
+        axis.text = element_text(size=11),
+        legend.text = element_text(size=12),
+        strip.text = element_text(size=16)
+  )
+ggsave("traffic_division_ss.png",width = 7, height = 4)
+
+
+
+## interactive media
+media <- read.csv("interactive_media.csv")
+
+media %>%
+  pivot_longer(cols = c(Fall.2017,Fall.2018,Fall.2019,Fall.2020,Fall.2021,Fall.2022), 
+               names_to = "year", 
+               values_to = "share") %>%
+  mutate(year = str_remove(year, "Fall.")) %>%
+  rename(category=X) %>%
+  ggplot(aes(x=year,y=share,group=category,color=category)) +
+  geom_point(size=1.5) +
+  geom_line() +
+  ylab("Percent") +
+  xlab("Year (Fall)") +
+  scale_colour_manual(values=c("red2","blue3")) +
+  theme_bw() +
+  theme(legend.title=element_blank(),
+        legend.position="right",
+        legend.margin=margin(2,4,5,3),
+        legend.box.margin=margin(-10,-10,-10,-10),
+        text=element_text(family="Times"),
+        axis.title.x = element_text(size=11),
+        axis.title.y = element_text(size=11),
+        axis.text = element_text(size=11),
+        legend.text = element_text(size=12),
+        strip.text = element_text(size=11)
+  )
+
+ggsave("interactive_media.png",width=5.5,height=3.5)

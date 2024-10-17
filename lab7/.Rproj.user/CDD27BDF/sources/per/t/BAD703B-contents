@@ -1,0 +1,120 @@
+---
+title: "Lab 7 Presentation"
+output: ioslides_presentation
+---
+We will have an activity for the next lab: you will present your code and your findings from a dataset that you simulated to have a specific type of multivariate relationship (see table below).
+You need to present the following content:
+What are the variables in your dataset? What is their “true” relationship?
+Show your code of the simulation
+Assuming there is a researcher who obtained this dataset, what would be a meaningful research question that they can ask?
+Estimate a model based on that research question.
+
+
+Show what would happen if the researcher failed to account for the “true” data-generating process in their models. (This can be a comparison of modeling results using different modeling specifications, a comparison of the model estimates to the “true” parameter values, and/or any other approaches that you think can effectively answer this question.)
+Any conclusion/thoughts/questions you have about the exercise.
+Use R Markdown for coding, and you can present in either the R Markdown file, or you can create a PDF, slideshow, or HTML file for presentation.
+Send your presentation file to me the day before the next lab (i.e. by Oct. 14th EOD)
+The presentation should be no longer than 15 minutes.
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(pacman)
+p_load(tidyverse, psych, gridExtra, foreign, stargazer, ggcorrplot, kableExtra)
+```
+
+## R Markdown
+
+This is an R Markdown presentation. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document.
+
+## Slide with Bullets
+
+- Bullet 1
+- Bullet 2
+- Bullet 3
+
+## Slide with R Output
+
+What are the variables in your dataset? 
+My variables are edu, inc, and loans. Edu is B1, inc, is B2, and Loans is y hat or the mean. 10 in the multiple linear regression equation is the B0.
+```{r cars, echo = TRUE}
+set.seed(1234)
+edu = rpois(300, lambda = 6) #rpois: Random Poisson Distribution with parameter lamda 
+inc = rnorm(300, mean = 5, sd = 2)
+cur_loans = rnorm(300, 0, 2)
+loans = 10 - 4*inc + 3*edu + cur_loans
+```
+
+
+
+```{r}
+cov(edu, inc)
+cov(edu, loans)
+cov(inc, loans)
+cor(edu, inc)
+```
+
+What is their “true” relationship?
+
+A change in one unit of edu will create an increase of 3 units of loans. This is a positive relationship. A change in one unit of inc will create a decrease of 4 units of loans. This is an inverse relationship.Edu and inc have a covariance of 0.5330695, which is close to 0, which means that we cannot conclude if they have a perfect linear correlation. Edu and inc might be slightly correlated however. They are not linearly correlated because they have a correlation of .1.
+
+
+
+What would be a meaningful research question that they can ask?
+
+Question: 
+What is the effect that Betas, edu and inc, have on the y hat, loans?
+
+
+
+
+Show what would happen if the researcher failed to account for the “true” data-generating process in their models. (This can be a comparison of modeling results using different modeling specifications, a comparison of the model estimates to the “true” parameter values, and/or any other approaches that you think can effectively answer this question.)
+
+Any conclusion/thoughts/questions you have about the exercise.
+
+
+
+
+
+```{r}
+# We will name the data frames of each variable df, df2, and df3. We will then plot a regression for each of the data frames as r1, r2, and r3. 
+
+df = tibble(x_edu = edu, 
+             y_loans = loans)
+
+df2 = tibble(x_inc = inc, 
+             y_loans = loans)
+
+df3 = tibble(x_inc = inc, x_edu = edu, 
+             y_loans = loans)
+
+r1 = lm(loans~edu, data = df)
+with(df, plot(edu, loans))
+abline(r1)
+
+r2 = lm(loans~inc, data = df2)
+with(df2, plot(inc, loans))
+abline(r2)
+
+r3 = lm(loans ~ edu + inc, data = df3)
+
+summary(r1)
+
+summary(r3)
+```
+Failed to account:
+
+If we do the summary of r1 and r2, they are bivariate regressions that do not encapsulate the full effect of edu or inc on loans because the other variable is omitted. r3 shows the  multivariate regression model with both edu and inc included so with that we can find the partial effect of edu and inc respectively by holding constant the values of other variables.
+
+Thoughts and Conclusions:
+
+Therefore, we look at the summary of r3 to determine if edu and inc are highly statistically significant together as well separately. edu*inc together are not statistically significant because the p value is large at .655, much larger than the general .05 rule. The p values of both inc and edu respectively are very small, so they are highly statistically significant to loans.
+
+edu*inc assumes that education and income are somewhat correlated, but since we found that edu*inc is not statistically significant, if we omitted the variable edu*inc, we would receive similar estimations of the model. Since the Multiple R squared and adjusted R squared are so high, at 0.9644 and 0.964, the variation of the dependent (loans) variable is mostly explained the independent variables (edu and inc). 
+
+Questions:
+
+Is there multicolinearity between my variables of edu and inc?
+
+How do I determine the partial effect of each variable? 
+
