@@ -55,22 +55,35 @@ Other    | 0          |    1
 (5) Model 5: earn ~ age + edu + female + race + edu*female
 
   4. Write down your prediction equation for Model 5
+  
+$$
+  I_i = \beta_0 A_i + \beta_1E_i + \beta_2F_i + \beta_3B_i + \beta_4O_i + \beta_5E_i \times F_i
+$$
 
-  5. In Model 5, holding other variables constant, what will be the predicted difference in estimated mean earnings for a white man and a white women?  
+  5. In Model 5, holding other variables constant, what will be the predicted difference in estimated mean earnings for a white man and a white women? 
   
   6. Holding other variables constant, what will be the predicted difference in estimated mean earnings for a white women and a black women?  
   
-  7. Holding other variables constant, what will be the predicted difference in estimated mean earnings for a white man and a black women?
+$$
+  \text{White woman} = \beta_0 \bar{A}_i + \beta_1\bar{E}_i \\
+  \text{White woman} = \beta_0 \bar{A}_i + \beta_1\bar{E}_i + \beta_2 + \beta_5\bar{E}_i
+$$
+  
+  7. Holding other variables constant, what will be the predicted difference in estimated mean earnings for a white man and a black woman?
+  
+$$
+  \text{White man} = \beta_0 \bar{A}_i + \beta_1\bar{E}_i \\
+  \text{Black woman} = \beta_0 \bar{A}_i + \beta_1\bar{E}_i + \beta_2 + \beta_3 + \beta_5\bar{E}_i
+$$
 
 ```{r part1-clean, warning=FALSE, message=FALSE}
 
 earnings_df <- read.csv("data/earnings_df.csv", stringsAsFactors = F)
 
 ## recode age
-earnings_df <-
-  earnings_df %>%
+earnings_df <- earnings_df %>%
   mutate(age = case_when(
-    age > 9000 ~ NA,
+    age==9999 ~ NA,
     .default = age
   ))
 
@@ -100,6 +113,10 @@ earnings_df <-
 
 
 ```{r part1-estimation, warning=FALSE, message=FALSE}
+
+earnings_df <- earnings_df %>% mutate(male = 1-female)
+corPlot(earnings_df[,c("earn","female","male")])
+
 m1 <- lm(earn ~ age, 
          data = earnings_df)
 
