@@ -115,7 +115,6 @@ earnings_df <-
 ```{r part1-estimation, warning=FALSE, message=FALSE}
 
 earnings_df <- earnings_df %>% mutate(male = 1-female)
-corPlot(earnings_df[,c("earn","female","male")])
 
 m1 <- lm(earn ~ age, 
          data = earnings_df)
@@ -142,6 +141,20 @@ stargazer(m1, m2, m3, m4, m5,
 Given the following modeling result, please answer the questions.
 
 ![](graph/dummy_reg_table.png){width=70%}
+
+  0. College premium for a White person
+  
+$$
+\text{College White} = 6.129 * 1 + 15.077 \\
+\text{Non-College White} = 15.077 \\
+$$
+
+0. College premium for a Black person
+
+$$
+\text{College Black} = 6.129 - 2.773 + 1.496 + 15.077 \\
+\text{Non-College Black} = 15.077 - 2.773 \\
+$$
 
   1. What will be the predicted difference in estimated mean earnings for a white person with a college degree and a black person with a college degree? Whose earnings will be higher?
   
@@ -179,7 +192,6 @@ pred_IV <- data.frame(edu = rep(0:15, 2)) %>%         ## first, create a df with
          age =  mean(earnings_df$age, na.rm = T),   ## fix other variables at mean
          black = mean(earnings_df$black),
          other = mean(earnings_df$other))
-rep(0:15,2)
 
 ## examine the df
 head(pred_IV, 5)
@@ -252,7 +264,7 @@ F_stats
 
 ```{r anova}
 
-anova(m3, m4)
+anova(m4, m5)
 
 ```
   
