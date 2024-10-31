@@ -1,0 +1,311 @@
+---
+title: "SOC-GA 2332 Intro to Stats Lab 8"
+author: "Di Zhou"
+date: "10/22/2021"
+output:
+  html_document:
+    df_print: paged
+    theme: paper
+    highlight: textmate
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    number_sections: false
+  pdf_document: 
+    toc: true
+---
+
+<style type="text/css">
+
+body{ 
+
+    font-size: 16px;
+    line-height: 1.7em;
+    <!-- text-align: justify; -->
+
+}
+
+blockquote {
+    padding: 10px 20px;
+    margin: 0 0 20px;
+    font-size: 16px;
+    border: solid 1px;
+    color: #008080
+}
+
+h1 { font-size: 32px; }
+
+h2 { font-size: 24px; }
+
+h3 { font-size: 20px; }
+
+</style>
+
+<br>
+
+---
+
+## Housekeeping
+
+* Exam 3
+
+* PS2: Extended to be due on Sunday, Oct. 24th.  
+
+* PS3: Will be released on Nov. 1st and will be due on Nov. 19th. (Assignment schedules are up-to-date on Brightspace under the "Assignment" unit.) 
+
+* Replication Project Part 1 reminder: 
+
+|         Task                       |  Timeline          |
+|------------------------------------|--------------------|
+| Obtaining the raw data from IPUMS  | By Oct. 15th      |
+| **Cleaning the data**              | **Oct. 18th to Oct. 22nd**  |
+| Replicating Table A1a, Table A1b, and Figure 1 and put in LaTeX | Oct. 25th to Oct. 29th|
+| Replicating the regression results (Table A2a, Table A2b) and put in LaTeX | Nov. 1st to Nov. 5th |
+| Write the 2-page project report + Wiggle room for formatting and debugging, etc. | Nov. 8th to Nov. 12th |
+  
+  * Note that the above steps can be iterative. Sometimes you may find out that your raw data misses some important variables and needs to be extracted again. You may also find that your replicated results are very different from the authors due to coding mistakes in the data cleaning step and need to go back to that.  
+  
+  
+---
+
+## Part 0: Questions about the lecture
+
+
+<br/><br/>
+<br/><br/>
+<br/><br/>
+
+
+---
+
+## Part 1: Additional Topics in Regression
+
+### 1.0. Import data and estimate models
+
+First, load packages to your environment. We are using several new packages today. Make sure to install them before running the code.
+
+```{r setup, include=T}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(pacman)
+p_load(tidyverse, stargazer, kableExtra, gridExtra, QuantPsyc, coefplot, sandwich, lmtest, ggthemes)
+
+```
+
+Import the `earnings_df` data and estimate models:
+
+```{r import and model}
+
+# Load cleaned and recoded df
+load("data/earnings_df.RData")
+
+# Examine data
+head(earnings_df, 10) %>% kbl("html") %>% kable_classic_2(full_width = F)
+
+# Estimate Nested Models
+m1 <- lm(earn ~ age_recode, 
+         data = earnings_df)
+
+m2 <- lm(earn ~ age_recode + edu,
+         data = earnings_df)
+
+m3 <- lm(earn ~ age_recode + edu + female,
+         data = earnings_df)
+
+m4 <- lm(earn ~ age_recode + edu + female + black + other,
+         data = earnings_df)
+
+m5 <- lm(earn ~ age_recode + edu + female + black + other + edu*female,
+         data = earnings_df)
+
+# Examine models
+stargazer(m1, m2, m3, m4, m5, 
+          type="text", 
+          omit.stat=c("ser", "f"),
+          star.char = c("*", "**", "***"),
+          star.cutoffs = c(0.05, 0.01, 0.001))
+
+```
+
+<br/><br/>
+
+### 1.1. F-test for Nested Models
+
+We can use F-test to compare two regression models. The idea behind the F-test for nested models is to check **how much errors are reduced after adding additional predictors**.  A relatively large reduction in error yields a large F-test statistic and a small P-value. The P-value for F statistics is the right-tail probability.  
+
+  If the F's p-value is significant (smaller than 0.05 for most social science studies), it means that at least one of the additional $\beta_j$ in the full model is not equal to zero.  
+  
+  The F test statistic for nested regression models is calculated by:
+
+$$F = \frac{(SSE_\text{restricted} - SSE_\text{full})/df_1}{SSE_\text{full}/df_2} $$
+where $df_1$ is the number of **additional** predictors added in the full model and $df_2$ is the **residual df for the full model**, which equals $(n - 1 - \text{number of IVs in the complete model})$. The $df$ of the F test statistic is $(df_1, df_2)$.  
+
+For example, according to the equation, we can hand-calculate the F value for `m4` vs `m5`:
+
+```{r F-hand}
+
+# SSE_restricted:
+sse_m4 <- sum(m4$residuals^2)
+
+# SSE_full:
+sse_m5 <- sum(m5$residuals^2)
+
+# We add one additional IV, so:
+df1 = 1
+
+# Residual df for the full model (m5):
+df2 = m5$df.residual
+
+# Calculate F:
+F_stats = ((sse_m4 - sse_m5)/df1)/(sse_m5/df2)
+F_stats
+
+# Check tail probability using `1 - pf()`
+1 - pf(F_stats, df1, df2) 
+```
+  
+  You can also use `anova()` to perform a F-test in R. 
+
+```{r }
+
+anova(m4, m5)
+
+```
+  
+> Discussion Question: What is your null and alternative hypotheses? What's your decision given the F-test result?  
+
+<br/><br/>
+
+### 1.2 Standardized Regression Coefficients
+
+#### 1.2.1 Standardized Regression Coefficients
+
+Why sometimes people report standardized regression coefficients? As we covered in the lecture, the size of a regression coefficient depends on **the scale at which the independent and dependent variables are measured**. 
+
+For example, assume that in a regression model the coefficient of population on the national GDP is 0.0001. This means that 1 additional person will lead to 0.0001 increase in the GDP. However, this value does not necessarily imply that the effect of population is less pronounced than other predictors whose coefficients have a larger value. Because the value of the coefficient depends on the measurement unit of the IV. If we now change population to **population in million**, the new coefficient of population will become $0.0001 \cdot 10^6 = 100$. Although the value of the coefficient gets much larger, this increase is caused by a change in the measurement unit, not the actual effect of population. 
+
+Therefore, it is problematic to use the raw value of the regression coefficient as indicators of relative effect size if the predictors in the model have different measurement units. In such scenarios, standardized regression coefficients can help compare the relative effect size of the predictors even if they are measured in different units. 
+
+Standardized coefficients convert both your dependent variable and independent variables to **z-scores**. That is, each of your original (numeric) variables are converted to have a mean of 0 and a standard deviation of 1. Thus, **standardized coefficients tell us the change in $Y$, in $Y$'s standard deviation units, for a one-standard-deviation increase in $X_i$, while holding other $X$s constant**.  
+
+There are two methods of getting standardized regression coefficients in R.
+
+#### 1.2.2 Method 1: Use `lm.beta()` from the `QuantPsyc` package
+
+You can get standardized regression coefficients by using the `lm.beta()` function in the `QuantPsyc` package. For example, if we want to get the standardized coefficients for Model 2 (`earn ~ age_recode + edu`):
+
+```{r }
+# Original model
+m2
+
+# Standardized coefficients
+std_m2 <- lm.beta(m2)
+std_m2
+
+```
+
+  
+  But this method will only report the point estimates instead of a comprehensive modeling result. To obtain that, we need to convert all numeric variables to z-scores and estimate regression models based on the transformed data.
+  
+
+#### 1.2.3 Method 2: Create Z-scores for All Numeric Variables
+
+For each numeric variables, we create the "standardized variables" by calculating their z-scores: 
+
+$$z = \frac{(x - \overline x)}{s_x}$$
+  
+  For example, we can use `mutate_at()` to covert numeric variables to z-scores in `earnings_df` using the above formula:
+  
+```{r }
+
+# A function that convert a numeric vector to a z-score vector
+get_zscore <- function(x){
+  (x - mean(x, na.rm = T))/sd(x, na.rm = T)
+  }
+
+# Create a df with numeric variables converted to z-score
+earnings_df_std <- earnings_df %>%
+  mutate_at(c("edu", "age_recode", "earn"), get_zscore)
+
+# Examine data
+head(earnings_df_std, 10) %>% kbl("html") %>% kable_classic_2(full_width = F)
+
+# Estimate model
+m2_std_zscore <-  lm(earn ~ age_recode + edu, data = earnings_df_std)
+
+# Compare results
+stargazer(m2, m2_std_zscore, type = "text")
+
+```
+
+
+> Discussion question: Given that **standardized coefficients tell us the change in $Y$, in $Y$'s standard deviation units, for a one-standard-deviation increase in $X_i$, while holding other $X$s constant**, interpret the standardized coefficients of `age_recode` and `edu` in the above modeling result.
+
+
+
+<br/><br/>
+
+## Part 2: Causality: The Potential Outcome Framework
+
+
+### 2.1 The Fundamental Problem of Causal Inference
+
+  "It is impossible to observe the value of $Y_t(u)$ and $Y_c(u)$ on the same unit and, therefore, it is impossible to *observe* the effect of $t$ on $u$." (Holland:947)
+  
+  "$Y_t(u)$ is the value of the response that would be observed if the unit were exposed to $t$ and $Y_c(u)$ is the value that would be observed *on the same unit* if it were exposed to $c$." (946)
+  
+  $$\delta_i = E(y^t_i) - E(y^c_i)$$
+
+<br/><br/>
+
+### 2.2 Naive Estimation of the Average Treatment Effect
+
+At the population level, the **average treatment effect (ATE)** is defined as:
+
+$$E[\Delta] = E[Y^t - Y^c] = E[Y^t] - E[Y^c]$$
+
+Since we do not observe the population level $Y^T$ or $Y^C$, the naive approach to estimate the population level ATE uses the following equation:
+
+$$\hat E[\Delta]_\text{NAIVE} = E[Y^t|D = 1] - E[Y^c|D = 0]$$
+  
+  which calculates the difference in the expected value of $Y$ in the observed treated group ($E[Y^t|D = 1]$) and the expected value of $Y$ in the observed control group ($E[Y^c|D = 0]$).  
+  
+  This will hold **if assignment to treatment is purely random**.  
+  
+<br/><br/>
+
+### 2.3 Selection Bias
+  
+  However, if there are selection bias that lead to certain kinds of unit to go into the treatment or control group, the naive estimator will be biased.  
+  
+  This is due to the fact that this additional factor is related to both assignment to treatment and the potential outcome.  
+  
+  For example, if family income both affects the likelihood of a child going to a high quality school AND one's likelihood to be unemployed in adulthood, using the naive estimation of ATE will lead us to **overstate** the effect of school quality in reducing unemployment because those in the treated group will have a lower potential outcome (unemployment risk) then the control group *even if they are not treated*.
+
+As covered in the lecture, we can decompose the naive estimator to:
+
+$$\hat E[\Delta]_\text{NAIVE} = E[Y^t|D=1] - E[Y^c|D=1] + E[Y^c|D=1] - E[Y^c|D=0]$$
+where $E[Y^t|D=1] - E[Y^c|D=1]$ is the **treatment effect on the treated** and $E[Y^c|D=1] - E[Y^c|D=0]$ is the **selection bias** (you can think of it as the baseline difference of $Y$ if both the treatment and the control group are not treated).
+
+There is also a definition of the **treatment effect on the control** (ATC), which can be expressed as $E[Y^t|D=0] - E[Y^c|D=0]$. This means: The difference in the expected $Y$ between (i) if people in the current control group ($D = 0$) get treated ($E[Y^t|D=0]$), which is the counterfactual, and (ii) if people in the current control group ($D = 0$) did not get treated ($E[Y^c|D=0]$), which is observed.
+
+---
+### Part 2 Exercise 1
+Assuming you are wearing the "God goggle" and know both $Y^t$ and $Y^c$ on the same individual, as well as their realized outcomes. Answering the following questions:
+
+<p align="center">
+![](graph/potential_outcome.png){width=70%}
+</p> 
+
+
+1. Calculate ATE:
+
+2. Calculate ATT: 
+
+3. Calculate ATC:
+
+4. Naive estimate of the ATE:
+
+5. Discuss: What causes the naive ATE to deviate from the true ATE in this example? 
+
+

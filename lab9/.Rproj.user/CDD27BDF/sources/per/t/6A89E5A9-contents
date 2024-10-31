@@ -1,0 +1,81 @@
+---
+title: "SOC-GA 2332 Intro to Stats Lab 8"
+author: "Di Zhou"
+date: "10/22/2021"
+output:
+  html_document:
+    df_print: paged
+    theme: paper
+    highlight: textmate
+    toc: true
+  pdf_document: 
+    toc: true
+---
+
+
+<style type="text/css">
+
+body{ 
+
+    font-size: 16px;
+    line-height: 1.7em;
+    <!-- text-align: justify; -->
+
+}
+
+blockquote {
+    padding: 10px 20px;
+    margin: 0 0 20px;
+    font-size: 16px;
+    border: solid 1px;
+}
+
+h1 { font-size: 32px; }
+
+h2 { font-size: 24px; }
+
+h3 { font-size: 20px; }
+
+</style>
+
+<br>
+
+---
+
+### Part 2 Exercise 1
+
+Assuming you are wearing the "God goggle" and know both $Y^t$ and $Y^c$ on the same individual, as well as their realized outcomes. Answering the following questions:
+
+<p align="center">
+![](graph/potential_outcome.png){width=70%}
+</p> 
+
+
+1. Calculate ATE:
+
+The true ATE is the average of each individual's treatment effect. 
+
+$$\frac{2 + (-2) + 5 + (-1) + 3 + 4}{6} = \frac{11}{6} = 1.83$$
+
+2. Calculate ATT: 
+
+The true ATT is the average of individual's treatment effect for the treatment group. In this example, they are unit 1, 4 and 6. 
+
+$$\frac{2 + (-1) + 4}{3} = \frac{5}{3} = 1.67$$
+
+3. Calculate ATC:
+
+The true ATC is the average of individual's treatment effect for the control group. In this example, they are unit 2, 3 and 5. 
+
+$$\frac{(-2) + 5 + 3}{3} = 2$$
+
+4. Naive estimate of the ATE:
+
+The naive estimate of the ATE is the difference between (a) the average value of Y in the treatment group and (b) the average value of Y in the control group. 
+
+$$\frac{10 + 7 + 6}{3} - \frac{15 + 9 + 1}{3} = \frac{23}{3} - \frac{25}{3} = -0.67$$
+
+5. Discuss: What causes the naive ATE to deviate from the true ATE in this example? 
+
+
+---
