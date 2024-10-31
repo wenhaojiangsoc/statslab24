@@ -36,3 +36,8 @@ Office Hours: Tuesday 2PM-4PM [here if meet on Zoom](https://nyu.zoom.us/my/wenh
 
 ### Lab 7 Types of Multivariate Relationships, Hetero/Homoskedasticity, Replication Project (10/18/2024)
 + Lab 7 covers the four types of multivariate relationships, the violation of homoskedasticity, robust standard error, and the replication project
+
+### Lab 8 Dummy Variables, Predicted Outcomes (10/25/2024)
++ Lab 8 covers dummy variables and their interactions, and the visualization of predicted outcomes from regression.
+
+### Lab 9 Causal Inference Framework, 
