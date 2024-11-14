@@ -45,3 +45,6 @@ Office Hours: Tuesday 2PM-4PM [here if meet on Zoom](https://nyu.zoom.us/my/wenh
 
 ### Lab 10 Discrete Dependent Variable, Logistic Regression, Maximum Likelihood Estimation (MLE) (11/08/2024)
 + Lab 10 covers the intuition behind the logit transformation, logistic regression, and a slight introduction to the MLE estimation.
+
+### Lab 11 Ordered Logit Model, Multinomial Logit Model, Conditional Logit Model (11/15/2024)
++ Lab 11 covers Ordered, Multinomial, and Conditional Logit Models
