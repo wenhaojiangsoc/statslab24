@@ -1,0 +1,515 @@
+---
+title: "SOC-GA 2332 Intro to Stats Lab 9"
+author: "Wenhao Jiang"
+date: "11/10/2023"
+output:
+  html_document:
+    df_print: paged
+    theme: paper
+    highlight: textmate
+---
+
+
+<style type="text/css">
+
+body{ 
+
+    font-size: 16px;
+    line-height: 1.7em;
+    <!-- text-align: justify; -->
+
+}
+
+blockquote {
+    padding: 10px 20px;
+    margin: 0 0 20px;
+    font-size: 16px;
+    border: solid 1px;
+}
+
+h1 { font-size: 32px; }
+
+h2 { font-size: 24px; }
+
+h3 { font-size: 20px; }
+
+</style>
+
+---
+
+## Logistics   
+* Exam 4
+
+* Replication project Part 1: Due Mon. 11/13 at 11:59pm. Please submit to Wenhao
+
+* Please understand every step of the codes you currently have
+  + For example, `pivot_wider()` function is from lab 1 codes, which I explained in lab 2 or 3.
+  + You should also be familiar with the combined use of `group_by() %>% summarize()`, which is very common in data analysis.
+
+* Why there are `NA` values in dissimilarity index?
+
+* How to format the dissimilarity index into a LaTeX table?
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(pacman)
+p_load(tidyverse, stargazer, kableExtra, gridExtra, 
+       effects, gmodels, MASS, nnet, ggpubr)
+
+## load data
+load("data/support_level_df.RData")
+
+```
+
+## Part 0: Kitagawa-Oaxaca-Blinder (KOB) Decomposition 
+
+* KOB Decomposition is a common practice to decompose group-wise difference into 1. endowment difference, 2. coefficient (slope) difference, and 3. unexplained portion.
+  + The group-wise difference is measured at the mean level, e.g. *mean* weakly income
+  + For example, gender difference in mean weekly income can be decomposed into:
+    + 1. the gender difference in *mean* education, years of experience, etc. Women once lagged behind men in education, but now has surpassed men in mean education
+    + 2. the gender difference in *returns* to education, years of experience, etc. Women typically have lower returns to education, but the trend is recently reversed, especially at the lower end (e.g. women with HS or some college are less penalized than men).  
+    + 3. the portion that cannot be explained by above observed characteristics
+
+* KOB starts from OLS regression. Now we focus on racial (White-Black) gap in mean weakly income
+  + OLS by race, White: $Y_{iw} = \alpha_{w} + \sum_{k=1}^{\ell} \beta_{kw}X_{ikw} + \epsilon_{iw}$
+  + OLS by race, Black: $Y_{ib} = \alpha_{b} + \sum_{k=1}^{\ell} \beta_{kb}X_{ikb} + \epsilon_{ib}$
+
+* The mean value of $Y_i$, $\bar{Y}_{w}$ or $\bar{Y}_{b}$, according to the properties of OLS, is:
+
+$$
+\bar{Y}_{w} = \alpha_{w} + \sum_{k=1}^{\ell} \beta_{kw}\bar{X}_{kw} \\
+\bar{Y}_{b} = \alpha_{b} + \sum_{k=1}^{\ell} \beta_{kb}\bar{X}_{kb}
+$$
+
+* The mean racial pay gap:
+
+$$
+\begin{aligned}
+\bar{Y}_{w} - \bar{Y}_{b} &= \alpha_{w} + \sum_{k=1}^{\ell} \beta_{kw}\bar{X}_{kw} - \alpha_{b} - \sum_{k=1}^{\ell} \beta_{kb}\bar{X}_{kb} \\
+&= \underbrace{\sum_{k=1}^{\ell}(\bar{X}_{kw}-\bar{X}_{kb})\beta_{kw}}_{\text{endowment difference}} + \left[ \underbrace{\sum_{k=1}^{\ell}\bar{X}_{kb}(\beta_{kw} - \beta_{kb})}_{\text{coefficient difference}} + \underbrace{(\alpha_{w}-\alpha_{b})}_{\text{intercept difference}}   \right]
+\end{aligned}
+$$
+
+* When we focus on one of the explanatory features, such as education, we may visualize the decomposition as follows:
+
+```{r include figure, fig.cap="Graphical Demonstration of KOB Decomposition", out.width = '65%', fig.align='center'}
+knitr::include_graphics("graph/KOB.png")
+```
+
+* Although KOB Decomposition is clean and intuitive, it also has some clear shortcomings. One of the key problems of KOB is that the decomposition results are sensitive to the reference group. E.g., when analyzing the education component in the racial pay gap, whether HS or graduate education is used as the reference group will change the results. 
+  + For a detailed demonstration of this problem, see [Jones and Kelley (1984)](https://doi.org/10.1177/0049124184012003004)
+  + Recent work used normalized coefficients to address the issue. Check this well-cited SMR paper: [Kim (2010)](https://doi.org/10.1177/0049124110366235)
+  + It also suffers from the typical problem of OLS. Without a causal inference design, the "discrimination" part of the model may be due to unmeasured characteristics (e.g., years of education vs field of studies). 
+  
+## Part 1: Bi-variate Associations (Contingency Tables)  
+
+For today, we will use a similar dataset about same-sex marriage support. But now we have three support levels (1 = Oppose, 2 = Neutral, 3 = Support) instead of a binary outcome.
+
+```{r check data, warning=FALSE, message=FALSE}
+
+## check data
+head(support_df, 10) %>% kbl("html") %>% kable_classic_2(full_width = F)
+```
+
+In `R`, you can create a contingency table by using the `table()` function and input the two categorical variables you are interested in. To conduct a chi-square test of independence, simply use the function `chisq.test(your_contingency_table)`. 
+
+```{r chisquare, warning=FALSE, message=FALSE}
+## create variables for contingency tables
+support_df <- support_df %>%
+  mutate(## convert dummies to categorical variables
+         gender = ifelse(female == 0, "male", "female"),
+         race = ifelse(black == 1, "black", "white"))
+
+## simple contingency table and chi-square test for support levels and race
+t1 <- table(support_df$support_level, support_df$race)
+t1
+chisq.test(t1)
+
+```
+
+---
+
+### Part 1 Exercise
+
+Recall that the $\chi^2$ statistic is defined as: 
+
+$$\chi^2 = \sum\frac{(f^o - f^e)^2}{f^e},$$
+where $f^o$ is the observed frequency and $f^e$ is the expected frequency.  
+
+You are given the following contingency table of support levels and gender: 
+
+```
+   Cell Contents
+|-------------------------|
+|                       N |
+|              Expected N |
+|           N / Row Total |
+|           N / Col Total |
+|         N / Table Total |
+|-------------------------|
+ 
+Total Observations in Table:  1000 
+
+                         | support_df$gender 
+support_df$support_level |    female |      male | Row Total | 
+-------------------------|-----------|-----------|-----------|
+                       1 |       105 |       147 |       252 | 
+                         |   123.228 |   128.772 |           | 
+                         |     0.417 |     0.583 |     0.252 | 
+                         |     0.215 |     0.288 |           | 
+                         |     0.105 |     0.147 |           | 
+-------------------------|-----------|-----------|-----------|
+                       2 |       109 |       126 |       235 | 
+                         |   114.915 |   120.085 |           | 
+                         |     0.464 |     0.536 |     0.235 | 
+                         |     0.223 |     0.247 |           | 
+                         |     0.109 |     0.126 |           | 
+-------------------------|-----------|-----------|-----------|
+                       3 |       275 |       238 |       513 | 
+                         |   250.857 |   262.143 |           | 
+                         |     0.536 |     0.464 |     0.513 | 
+                         |     0.562 |     0.466 |           | 
+                         |     0.275 |     0.238 |           | 
+-------------------------|-----------|-----------|-----------|
+            Column Total |       489 |       511 |      1000 | 
+                         |     0.489 |     0.511 |           | 
+-------------------------|-----------|-----------|-----------|
+
+```
+1. How do you calculate the expected frequency for each cell? Verify your answer with the expected frequencies in the table.
+2. State you null and alternative hypotheses of the $\chi^2$ test;  
+3. Calculate the $\chi^2$ statistic using the formula above;
+4. Calculate the p-value of your test statistic. *Hint*: (a) recall that the degree of freedom is calculated by $\text{df} =(\text{nrow}−1)·(\text{ncol}−1)$, (b) search `pchisq`   
+
+```{r exercise, warning=FALSE, message=FALSE}
+## your code here
+(105-123.228)^2/123.228 + (147-128.772)^2/128.772 +
+  (109-114.915)^2/114.915 + (126-120.085)^2/120.085 +
+  (275-250.857)^2/250.857 + (238-262.143)^2/262.143
+
+## p value
+pchisq(10.41945,2,lower.tail=F)
+```
+
+---
+
+## Part 2: Ordered Logit Regression Model  
+
+### 2.1 Model Setup
+
+* The cumulative probability for individual $i$’s choice up to response level $j$ is given by:  
+
+$$C_{i,j} = Pr(y_i \le j) = \sum^{j}_{k = 1}Pr(y_i = k) = \frac{1}{1 + exp(-(\phi_j - x_i\beta))} \\j = 1, 2, ..., J$$
+
+* This specific form of cumulative probability stems from the Sigmoid function:
+
+$$
+f(x) = \frac{1}{1+exp(-x)}
+$$
+which is monotonically increasing w.r.t. $x$
+
+* Here we replace $x$ by the linear combination of category-specific cutpoints $\phi_j$ and individual-specific characteristics and their coefficients
+  + Intuitively, we would use $\frac{1}{1 + exp(-(\phi_j + x_i\beta))}$ as in binary logistic model
+  + We use $\frac{1}{1 + exp(-(\phi_j - x_i\beta))}$ because the model was specified in this way at the time of invention -- path dependence
+  + It only changes the sign of $\beta$, but not its magnitude
+  
+* As the Sigmoid function is monotonically increasing, we will have:
+  + $\phi_0 < \phi_1 < ... < \phi_J$
+  + $\phi_0$ to be $-\infty$ and $\phi_J$ to be $\infty$. 
+
+* The probability of being in response category $j$ for the same individual $i$ is:  
+
+$$
+\begin{aligned}
+Pr(y_i = j) &= C_{i,j} - C_{i,j-1} \\
+&= Pr(y_i \leq j) - Pr(y_i \leq j-1) \\
+&= \frac{1}{1 + exp(-\phi_j + x_i\beta)} - \frac{1}{1 + exp(-\phi_{j-1} + x_i\beta)}
+\end{aligned}
+$$
+* $\theta_j$ and $\beta$ are estimated using Maximum Likelihood Estimation (MLE). In `R`, you can estimate a ordered logit model using the `polr()` function from the `MASS` package. 
+
+```{r }
+# Estimate ordered logit model
+ologit1 <- polr(support_level ~ eduy, data = support_df, method="logistic")
+ologit2 <- polr(support_level ~ eduy + age, data = support_df, method="logistic")
+ologit3 <- polr(support_level ~ eduy + age + female, data = support_df, method="logistic")
+ologit4 <- polr(support_level ~ eduy + age + female + black, data = support_df, method="logistic")
+
+stargazer(ologit1, ologit2, ologit3, ologit4, type="text")
+
+```
+
+### 2.2 Coefficients Interpretation  
+
+* In ordered logit models, the coefficients capture the effect on the log odds of moving to the "higher rank". The exponentiated coefficients indicate the **ratio between the odds** after and before the given predictor increased by one unit.
+
+* The odds here is defined as the probability of being in a higher category divided by the probability of being in the current or lower category.
+
+$$
+\begin{aligned}
+\frac{\frac{Pr(y_i > j|X_k + 1)}{Pr(y_i \le j|X_k + 1)}}{\frac{Pr(y_i > j|X_k)}{Pr(y_i \le j|X_k)}} &= \frac{\frac{1-Pr(y_i \le j|X_k + 1)}{Pr(y_i \le j|X_k + 1)}}{\frac{1-Pr(y_i \le j|X_k)}{Pr(y_i \le j|X_k)}} \\
+&=  \frac{exp(-\phi_j + (x_k+1)\beta_k)}{exp(-\phi_j + x_k\beta_k)}\\
+&= exp(\beta_k)
+\end{aligned} 
+$$
+
+* To get these odds ratios in R, use `exp(coef(your_model_object))` (same as the code you use for getting odds ratio for logistic models).
+
+```{r exponentiated, warning=FALSE, message=FALSE}
+## odds Ratio
+exp(coef(ologit4))
+```
+
+* Note that the term $exp(\beta_k)$ does not depend on $j$. In other words, the effect of $X_k$ on $y_i$ moving to a higher category is the same across $j$. The effect of moving from the lowest category to higher ones is the same as from the second highest category to the highest category. This is **the proportional odds assumption/parallel regression assumption**
+
+
+> **Exercise**: Interpret the exponentiated regression coefficients of `eduy` and `age` of `ologit4`. 
+
+
+### 2.3 Plot Predicted Probability
+
+```{r prediction, warning=FALSE, message=FALSE}
+
+## dataframe for prediction
+predicted_ord <- as.data.frame(Effect(c("eduy"), 
+                                  ologit4,
+                                  xlevels = list(
+                                    eduy = seq(3, 24, by = 0.5),
+                                    age = mean(support_df$age),
+                                    black = mean(support_df$black),
+                                    female = mean(support_df$female))
+                                  ), 
+                           level=95)
+
+
+## get predicted yhat, pivot to long form
+predicted_y_ord <- predicted_ord %>% 
+  dplyr::select(eduy, prob.X1, prob.X2, prob.X3) %>%
+  pivot_longer(!eduy, names_to = "level_y", values_to = "yhat") 
+
+## get predicted upper CI of yhat, pivot to long form
+predicted_upr_ord <- predicted_ord %>% 
+  dplyr::select(eduy, U.prob.X1, U.prob.X2, U.prob.X3) %>%
+  pivot_longer(!eduy, names_to = "level_upr", values_to = "upr") %>%
+  dplyr::select(-eduy, -level_upr)
+
+## get predicted lower CI of yhat, pivot to long form
+predicted_lwr_ord <- predicted_ord %>% 
+  dplyr::select(eduy, L.prob.X1, L.prob.X2, L.prob.X3) %>%
+  pivot_longer(!eduy, names_to = "level_lwr", values_to = "lwr") %>%
+  dplyr::select(-eduy, -level_lwr)
+
+## combine to one df for plotting
+predicted_plot_ord <- cbind(predicted_y_ord, predicted_upr_ord, predicted_lwr_ord)
+predicted_plot_ord
+
+## plot
+figure1 <- predicted_plot_ord %>% 
+  ggplot(aes(x = eduy, y = yhat, 
+             ymax = upr, ymin = lwr, 
+             fill = as.factor(level_y),
+             linetype = as.factor(level_y))) + 
+  geom_line() + 
+  geom_ribbon(alpha = 0.3) +
+  labs(title = "Ordered Logit",
+       x = "Years of Education",
+       y = "Predicted Probability") +
+  scale_fill_manual(name = "",
+                    values = c("#3182bd", "#31a354", "#de2d26"), 
+                    label = c("Disagree", "Neutral", "Agree")) +
+  scale_linetype_manual(name = "", 
+                        values = c("dashed", "dotdash", "solid"), 
+                        label = c("Disagree", "Neutral", "Agree")) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+figure1
+```
+
+
+## Part 3: Multinomial Logit Regression Model
+
+### 3.1 Model Setup
+
+* Multinomial logit model can be used to predict the probability of a response falling into a certain category among $K$ categories that are *not ordered*. 
+
+* We think of the problem as fitting $K-1$ independent binary logit models, where one of the possible outcomes is defined as a pivot, and the $K-1$ outcomes are compared with the pivot outcome.
+  + A binary logistic model is a special case of multinomial logit model
+  + Recall a binary model has the form:
+  
+  $$
+  \begin{aligned}
+  \text{logit}(Pr(Y_i=1)) &= \log \left( \frac{Pr(Y_i=1)}{1-Pr(Y_i=1)} \right) \\
+  &= \log \left( \frac{Pr(Y_i=1)}{Pr(Y_i = 0)} \right) \\
+  &= \alpha_1 + \beta_1 X_i
+  \end{aligned}
+  $$
+  + which essentially compares the outcome ($Y_i = 1$) with the pivot, reference outcome ($Y_i = 0$)
+
+* Now in parallel, with multiple $K$ outcomes, the $K-1$ non-pivotal outcomes is assumed to be (assuming the first group is the pivot one): 
+
+$$
+\begin{aligned}
+\log \left( \frac{Pr(Y_i=2)}{Pr(Y_i = 1)} \right) &= \alpha_2 + \beta_2 X_i \\
+\log \left( \frac{Pr(Y_i=3)}{Pr(Y_i = 1)} \right) &= \alpha_3 + \beta_3 X_i \\
+&...
+\\
+\log \left( \frac{Pr(Y_i=K)}{Pr(Y_i = 1)} \right) &= \alpha_{K} + \beta_{K} X_i
+\end{aligned}
+$$
+
+* Rewriting each probability, we get:
+
+$$
+\begin{aligned}
+Pr(Y_i=2) &= \exp(\alpha_2 + \beta_{2} X_i) \times Pr(Y_i = 1) \\
+Pr(Y_i=3) &= \exp(\alpha_3 + \beta_{3} X_i) \times Pr(Y_i = 1) \\
+&...
+\\
+Pr(Y_i=K) &= \exp(\alpha_{K} + \beta_{K} X_i) \times Pr(Y_i = 1) 
+\end{aligned}
+$$
+
+* As $\sum_{k=1}^{K}Pr(Y_i=k) = 1$, we get:
+
+$$
+\begin{aligned}
+Pr(Y_i=1) &= \frac{1}{1+\sum_{k=2}^{K} \exp(\alpha_k + \beta_{k}X_i)} \\
+Pr(Y_i=2) &= \frac{\exp(\alpha_k + \beta_2X_i)}{1+\sum_{k=2}^{K} \exp(\alpha_k + \beta_{k}X_i)} \\
+...\\
+Pr(Y_i=K) &= \frac{\exp(\alpha_k + \beta_2X_i)}{1+\sum_{k=2}^{K} \exp(\alpha_k + \beta_{k}X_i)}
+\end{aligned}
+$$
+
+  + Here we have $\alpha_k$, while it was omitted in lecture notes, as the latter was expressed in a matrix form, where the intercept is absorbed by a vector of 1 in matrix $\mathbf{X}_i$
+  
+* Multinomial logit model can be estimated using the `multinom()` function from the `nnet` package.  
+
+```{r multinom, warning=F, message=F}
+
+## estimate multinomial logit models
+mlogit1 <- multinom(support_level ~ eduy, data = support_df)
+mlogit2 <- multinom(support_level ~ eduy + age, data = support_df)
+mlogit3 <- multinom(support_level ~ eduy + age + female, data = support_df)
+mlogit4 <- multinom(support_level ~ eduy + age + female + black, data = support_df)
+
+stargazer(mlogit1, mlogit2, mlogit3, mlogit4, 
+          type="text")
+```
+
+### 3.2 Coefficients Interpretation
+
+* The exponentiated regression coefficients from the multinomial logit model can be interpreted in terms of **relative risk ratios**. This makes the interpretation of the coefficients a bit more intuitive, compared to the coefficients from either binary or ordinal logistic regression.  
+
+$$
+\begin{aligned}
+\text{Relative Risk Ratio} &= \frac{\frac{Pr(Y_i=k|x_i + 1)}{Pr(Y_i=1|x_i+1)}}{\frac{Pr(Y_i=k|x_i)}{Pr(Y_i=1|x_i)}} \\
+&= \frac{\exp(\alpha_k)\exp \left[\beta_k (x_i + 1) \right]}{\exp(\alpha_k)\exp(\beta_kx_i)} \\
+& =\exp(\beta_k)
+\end{aligned}
+$$  
+  
+* The interpretation for $\beta_k$ is: holding others at constant, for one unit increase of the predictor, the relative risk of falling into the category $k$, compared with falling into the baseline category, increases by a factor of $exp(\beta_k)$.
+
+* To get the relative risk ratios in R, use `exp(coef(your_model_object))` (same as the code you use for getting odds ratio for logistic models).
+
+```{r exponentiate}
+## get relative risk ratios for the 4th model
+exp(coef(mlogit4))
+```
+
+
+>**Exercise**: Interpret the coefficients of `eduy` and `age` from the above output of exponentiated regression coefficients of `mlogit4`.
+
+### 3.3 Plot Predicted Probabilities
+  
+* We can also plot the predicted effect for multinomial logistic models. For example, we can plot the predicted probabilities for the three possible outcomes (support, neutral, oppose) using the `Effect()` function.
+
+```{r plot predictions, warning=FALSE, message=FALSE}
+# Get predicted y values
+predicted_mul <- as.data.frame(Effect(c("eduy"), 
+                                  mlogit4,
+                                  xlevels = list(
+                                    eduy = seq(3, 24, by = 0.5),
+                                    age = mean(support_df$age), 
+                                    black = mean(support_df$black), 
+                                    female = mean(support_df$female))
+                                  ), 
+                           level=95)
+
+# Get predicted yhat, pivot to long form
+predicted_y_mul <- predicted_mul %>% 
+  dplyr::select(eduy, prob.X1, prob.X2, prob.X3) %>%
+  pivot_longer(!eduy, names_to = "level_y", values_to = "yhat") 
+
+# Get predicted upper CI of yhat, pivot to long form
+predicted_upr_mul <- predicted_mul %>% 
+  dplyr::select(eduy, U.prob.X1, U.prob.X2, U.prob.X3) %>%
+  pivot_longer(!eduy, names_to = "level_upr", values_to = "upr") %>%
+  dplyr::select(-eduy, -level_upr)
+
+# Get predicted lower CI of yhat, pivot to long form
+predicted_lwr_mul <- predicted_mul %>% 
+  dplyr::select(eduy, L.prob.X1, L.prob.X2, L.prob.X3) %>%
+  pivot_longer(!eduy, names_to = "level_lwr", values_to = "lwr") %>%
+  dplyr::select(-eduy, -level_lwr)
+
+# Combine to one df for plotting
+predicted_plot_mul <- cbind(predicted_y_mul, predicted_upr_mul, predicted_lwr_mul)
+
+# Plot
+figure2 <- predicted_plot_mul %>% 
+  ggplot(aes(x = eduy, y = yhat, 
+             ymax = upr, ymin = lwr, 
+             fill = as.factor(level_y),
+             linetype = as.factor(level_y))) + 
+  geom_line() + 
+  geom_ribbon(alpha = 0.3) +
+  labs(title = "Multinomial Logit",
+       x = "Years of Education",
+       y = "Predicted Probability") +
+  scale_fill_manual(name = "",
+                    values = c("#3182bd", "#31a354", "#de2d26"), 
+                    label = c("Disagree", "Neutral", "Agree")) +
+  scale_linetype_manual(name = "", 
+                        values = c("dashed", "dotdash", "solid"), 
+                        label = c("Disagree", "Neutral", "Agree")) +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+ggarrange(figure1, figure2, ncol=2, common.legend = TRUE,
+          legend="right")
+
+```
+
+## Part 4: Conditional Logit Regression Model
+
+### 4.1 Model Setup
+
+* For subject $i$ and response choice $j$. Suppose there are $Q$ possible choices. Let $X_{ij}$ denote the expected utility for $i$ to choose $j$ (which may depend on characteristics of both $i$ and $j$). 
+
+* The probability of person $i$ selecting option $j$ is:
+
+$$
+\begin{aligned}
+\pi_{ij} &= \frac{exp(\beta^{T}X_{ij})}{\sum_{q=1}^{Q} exp(\beta^{T}X_{iq})}
+\end{aligned}
+$$
+
+### 4.2 Real-world Applications
+
+* The model frequently appear in the Machine Learning literature, commonly referred as a Softmax function.
+  + In ML, it is most commonly used as the last activation layer of a neural network to normalize the output of a network to a probability distribution over predicted output classes
+  
+```{r NN Softmax, fig.cap="A Simple Neural Network Model with Softmax Activation Layer", out.width = '65%', fig.align='center'}
+knitr::include_graphics("graph/nn_softmax.png")
+```
+
+* One important application of the function is the Word Embedding Model (Skip-Gram with Negative Sampling, SGNS) that is influential in e.g. information retrieval (in CS, [Mikolov et al. 2013](https://arxiv.org/abs/1301.3781)), documenting semantic change of words (in Linguistics, [Hamilton et al. 2016](https://arxiv.org/abs/1605.09096)) and understanding collective schema (in Sociology, [Kozlowski et al. 2019](https://journals.sagepub.com/doi/full/10.1177/0003122419877135))
+  + The intuition of the model is to maximize the probability that the target word $w_{t+j}$ appears in the context window of the central word $w_t$, expressed as $P(w_{t+j}|w_t)$
+  + Both target and central words are $n$-dimensional vectors (e.g., 300-dimension) summarized by parameter $\theta$. The "utility" of two words to co-occur is $u_{w_{t+j}}^{T} v_{w_t}$. SGNS models the probability as:
+  
+  $$
+  P(w_{t+j}|w_t, \theta) = \frac{exp \left( u_{w_{t+j}}^{T} v_{w_t} \right)}{\sum_{k \in V} exp\left( u_{k}^{T} v_{w_t} \right)}
+  $$
+  + where the total "options" of words given the central word is the whole vocabulary list
