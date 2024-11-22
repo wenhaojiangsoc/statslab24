@@ -48,3 +48,6 @@ Office Hours: Tuesday 2PM-4PM [here if meet on Zoom](https://nyu.zoom.us/my/wenh
 
 ### Lab 11 Ordered Logit Model, Multinomial Logit Model, Conditional Logit Model (11/15/2024)
 + Lab 11 covers Ordered, Multinomial, and Conditional Logit Models
+
+### Lab 12 Panel Data, Fixed Effects, and Random Effects Models (11/22/2024)
++ Lab 12 covers panel data structure, fixed-effects, and random-effects models
