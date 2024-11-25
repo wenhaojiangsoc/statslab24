@@ -159,7 +159,27 @@ knitr::include_graphics("graph/exercise1.png")
 ```{r exercise-part2, warning=FALSE, message=FALSE}
 
 ## your code here
+set.seed(930412)
+nr_sample <- sample(wagepan$nr, 10, replace = FALSE)
 
+## look at aggregate trend
+fig1 <- wagepan %>%
+  filter(nr %in% nr_sample) %>%
+  ggplot(aes(x = exper, y = lwage)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = F)
+
+## look at individual trend
+fig2 <- wagepan %>%
+  filter(nr %in% nr_sample) %>%
+  ggplot(aes(x = exper, y = lwage, color = as.factor(nr), group = as.factor(nr))) +
+  geom_point() +
+  geom_line() +
+  geom_smooth(method = "lm", se = F) +
+  scale_colour_colorblind() +
+  theme(legend.position = "none")
+
+ggarrange(fig1, fig2)
 ```
 
 # Part 3: R Implementation of Panel Models
