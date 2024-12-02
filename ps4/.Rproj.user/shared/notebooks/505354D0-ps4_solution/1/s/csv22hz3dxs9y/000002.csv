@@ -1,0 +1,4 @@
+"0","tbl <- tibble(`Final Digit` = c(seq(1, 9, 1), 0, ""Total""),"
+"0","              `Observed Count` = c(11, 8, 9, 10, 5, 14, 20, 17, 13, 9, 116))"
+"0","              "
+"0","tbl %>% kbl(booktabs = T, align = ""c"") %>% kable_styling(full_width = F)"
