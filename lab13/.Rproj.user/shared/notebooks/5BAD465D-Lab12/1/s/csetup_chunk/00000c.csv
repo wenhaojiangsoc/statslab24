@@ -1,0 +1,7 @@
+"0","knitr::opts_chunk$set(echo = TRUE, warning = F, message = F)"
+"0",""
+"0","library(pacman)"
+"0","p_load(tidyverse, data.table, stargazer, kableExtra, gridExtra, MatchIt, PSweight, AER,haven)"
+"0",""
+"0","options(scipen = 999)"
+"0",""

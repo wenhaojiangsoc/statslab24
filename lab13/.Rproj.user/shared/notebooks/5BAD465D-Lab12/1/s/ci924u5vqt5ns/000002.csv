@@ -1,0 +1,6 @@
+"0","#import data"
+"0","ecls <- read.csv(""data/ecls.csv"") # the Early Childhood Longitudinal Study"
+"0",""
+"0","# covariates variable name vector"
+"0","ecls_cov <- c('race_white', 'p5hmage', 'w3income', 'p5numpla', 'w3momed_hsb')"
+"0",""

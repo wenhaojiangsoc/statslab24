@@ -1,0 +1,306 @@
+---
+title: "Problem Set 4 Solution"
+author: "SOC-GA 2332 Intro to Stats (Fall 2021)"
+date: 'Due: Friday, Dec. 10th, 11:59 pm'
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+# Instructions
+
+\begin{enumerate}
+    \item Submit two files for each problem set. The first is a \textbf{R Markdown} (\texttt{.Rmd}) file that can be run without error from start to end. The second is a \textbf{PDF} rendered from your R Markdown file or created using \LaTeX{}. 
+    \item Name your files following this convention: \texttt{[Last Name]\_ps1.Rmd} and \texttt{[Last Name]\_ps1.pdf}. 
+    \item Both files should be submitted to the TA via e-mail (di.zhou@nyu.edu) before the time specified above.
+    \item You are given plenty of time to work on the problem set. Please plan ahead and start early. \textbf{Except for special circumstances, the TA will not accept last-minute questions asked on the day when the problem set is due}.
+    \item You are encouraged to discuss the problems with your classmates. Notice as well that we have students in this class who are not in your cohort. It would be great if you could reach out to them and work together. But \textbf{the R Markdown and PDF files that you submit have to be created on your own}.
+    \item Comment on your code wherever possible and explain your ideas in detail. You will get credit for showing the steps you take and for explaining your reasoning, even if you do not get the correct final result.
+\end{enumerate}
+
+\noindent\rule{16.5cm}{0.4pt}
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(pacman)
+p_load(tidyverse, kableExtra, foreign, MASS, plm, lmtest, stargazer)
+
+```
+
+# Part 1 Forensic Statistics and the Chi-Square Test  
+
+Human beings are very bad at making up numbers. If you are told to come up with a sequence of random numbers, you will likely end up following some sort of pattern that is far from being random. For example, to pretend that your are selecting numbers at random, you will tend to pick "random-looking" numbers like 48 more often than "nonrandom-looking" numbers like 100. Picking "random-looking" numbers more often than "nonrandom-looking" ones is something that shouldn't occur randomly. The Chi-Square test provides us with a useful framework to formally detect this. One of its many applications is the detection of election fraud.  
+  
+  Imagine that you are part of a team of international observers that has been called to assess whether there is evidence of fraud in a general election that took place in a foreign country. Two candidates were on the ballot: Candidate A (the incumbent) and Candidate B. Candidate A won the election with 62% of the votes. One week after the election, some raised concerns about the validity of this result and suggested the possibility that election fraud could have occurred.^[These are real data from the Iranian election that was held on June 12, 2009. This exercise has been inspired by one example used by Dan Levy in his "Advanced Quantitative Methods" course at the Harvard Kennedy School.]  
+  
+  The setting is the following. There were 116 voting stations across the country. Each voting station has sent you the count of votes that went to Candidate A. To assess election fraud, you will be evaluating the frequency with which the final digit in each of these counts appears in the data. The table below shows precisely this. The first column list all values that the last digit in a vote count can take on (0 to 9). For example, if the number of votes that went to Candidate A in voting station #24 was 659, the final digit of this vote count would be 9. The second column tells you the frequency with which each final digit appeared across all voting stations. Among the 116 voting stations, 11 reported a number of votes for Candidate A that ended in 1, 8 reported a number of votes for Candidate A that ended in 2, and so on.
+  
+  
+  
+```{r , echo=FALSE}
+
+tbl <- tibble(`Final Digit` = c(seq(1, 9, 1), 0, "Total"),
+              `Observed Count` = c(11, 8, 9, 10, 5, 14, 20, 17, 13, 9, 116))
+              
+tbl %>% kbl(booktabs = T, align = "c") %>% kable_styling(full_width = F)
+```
+  
+  Answers the questions below:  
+  
+  **1.[4pts] If the election results had not been manipulated (i.e., fraud did not occur), what would be your best guess for the number of voting stations that reported a vote count for Candidate A ending in 1? And in 6? And in 9?**  
+  
+  The expected number for 1, 6 and 9 are all equal to 11.6.  
+  
+  If there is no fraud, the number of the voting station we observe should be uniformly distributed, meaning that the appearance of the final digit is random and therefore has a probability of $\frac{1}{10}$. Therefore, the expected count for each final digit is expected to be $\frac{1}{10}*116 = 11.6$.
+  
+  **2.[4pts] If the election results had not been manipulated, what is the probability that a vote count for Candidate A ended in 1? And in 6? And in 9?**  
+  
+  As analyzed above, the probability for 1, 6 and 9 are all equal to 10%.
+  
+  **3.[4pts] Following the logic from questions 1 and 2, complete columns 3 to 5 in the table below.**
+
+```{r }
+# First, recreate the data frame that contain the needed information
+# Remove the last row b/c the data type is inconsistent
+df_part1 <- tibble(`Final Digit` = c(seq(1, 9, 1), 0),
+                     `Observed Count` = c(11, 8, 9, 10, 5, 14, 20, 17, 13, 9),
+                     `Observed Share` = "",
+                     `Expected Count` = 116/10,
+                     `Expected Share` = 1/10, 
+                     `Chi-Square Stat` = "") %>%
+  mutate(`Observed Share` = `Observed Count`/116, 
+         `Chi-Square Stat` = (`Observed Count` - `Expected Count`)^2/`Expected Count`
+         ) 
+
+# Calculate sum of chi-square: 15.55172
+chi_sum <- sum(df_part1$`Chi-Square Stat`)
+
+# Recreate the table for display
+tibble(`Final Digit` = c(df_part1$`Final Digit`, "Total"),
+       `Observed Count` = c(df_part1$`Observed Count`, 116),
+       `Observed Share` = c(df_part1$`Observed Share`, 1),
+       `Expected Count` = c(df_part1$`Expected Count`, 116),
+       `Expected Share` = c(df_part1$`Expected Share`, 1), 
+       `Chi-Square Stat` = c(df_part1$`Chi-Square Stat`, chi_sum)) %>% 
+  kbl(booktabs = T, align = "c", digits = 2) %>% 
+  kable_styling(latex_options = "striped", full_width = F)
+
+```
+  **4.[4pts] Do the expected counts and shares match the observed ones? Just by looking at these discrepancies, are you able to determine whether fraud occurred?**   
+  
+  The expected counts and the observed counts do not match neatly. For example, numbers such as "7" and "8" seem to have higher than expected frequencies, while numbers "5" seems to have a lower than expected frequency given the "no-fraud" assumption. For other digits, though, their frequencies seem to fluctuate around 0.1. However, it is hard to determine whether fraud occurs just from eye-balling the result.
+  
+  **5.[4pts] Formally define the null and alternative hypotheses for the test of "no fraud" in that election.**  
+  
+  Our null hypothesis should indicate that there is no election fraud. In other words, the observed count of the last digit should conform to a discrete uniform distribution. Therefore,  
+  
+  $H_{0}:$ The last digits and their counts are independent.  
+  
+  $H_{a}:$ The last digits and their counts are not independent.
+  
+  **6.[4pts] Calculate the $\chi^2$ statistics for each row in the table (Column 6). Input your results in the table. Keep in mind that the $\chi^2$ statistic is computed form counts, not from proportions.**  
+  
+  See Table 1 above.
+
+  **7.[4pts] Calculate the $\chi^2$ statistic for the entire distribution of outcomes and calculate the p-value.**   
+  The $\chi^{2}$ statistic for the entire distribution is 15.55.
+
+  **8.[4pts] Do you reject or fail to reject the null hypothesis of no fraud (use the significance level at 0.05).**   
+
+```{r }  
+
+# Get p-value for observed data
+pchisq(chi_sum, df = 9, lower.tail = F)
+  
+```
+  Using the $\chi^{2}$ from Q7, the significance test gives a p-value of **0.077**. Therefore, at the significance level $\alpha$ = .05, we cannot reject $H_{0}$.
+
+  **9.[8pts] Write 3 paragraphs reporting your findings and explaining the logic that you followed to detect fraud in this election. You are writing this to someone who understands the concepts of sampling and randomness, but does not know what a Chi-Square test is. Imagine that this analysis is part of an academic article, and you have been invited to write a non-technical summary of your findings for the Upshot or Wonkblog.**  
+  
+  (Skipped)
+
+
+# Part 2: Fixed Effects and Random Effects Models
+
+In this exercise, we will use the dataset `sibling_data.dta` to study the effect of mother experiencing stress in pregnancy on a child’s birth weight. All variables are described in the table below.
+  
+Variable Name|  Variable Detail
+------------|----------------------------
+ *Group Variable* | 
+ `householdid` | Unique household id; Siblings from the same household share the same household id
+               |
+ *Dependent Variable* | 
+ `birthwt`   | birth weight measured in pounds  
+              |
+ *Independent Variable* | 
+ `stress`    | Whether or not mother experienced stress in pregnancy (Yes=1; No=0)
+ `age`       | Age
+ `female`    | Female=1; Male=0
+ `magebirth` | Mother’s Age at Birth
+ `numsibling`| Number of Sibling
+ `meduy`    | Mother’s Years of Schooling
+ `feduy`    | Father’s Years of Schooling
+ 
+
+1.[10pts] Import the dataset `sibling_data.dta` to your R environment. Including all independent variables, build an OLS model, a fixed effects model, and a random effects model (use the `plm` R package). Summarize regression results in a table. Make sure to label your models in your table (the `column.labels` argument in `stargazer()`).  
+
+```{r, results='asis'}
+# -------Import data-------
+sibling_data <- read.dta("sibling_data.dta")
+
+# -------OLS model-------
+sibling_ols <- plm(data = sibling_data, 
+                  birthwt ~ stress + age + female + magebirth + numsibling + meduy + feduy,
+                  index = c("householdid"),
+                  model = "pooling")
+# summary(sibling_ols)
+# Another way to estimate the OLS:
+# sibling_lm <- lm(data = sibling_data, 
+#                  birthwt ~ stress + age + female + magebirth + numsibling + meduy + feduy)
+
+# -------Fixed effects-------
+sibling_fe <- plm(data = sibling_data, 
+                  birthwt ~ stress + age + female + magebirth + numsibling + meduy + feduy, 
+                  index = c("householdid"),
+                  model = "within")
+# summary(sibling_fe)
+# Examine fixed effect for each household ID: fixef(sibling_fe)
+
+# -------Random effects-------
+sibling_re <- plm(data = sibling_data, 
+                  birthwt ~ stress + age + female + magebirth + numsibling + meduy + feduy, 
+                  index = c("householdid"),
+                  model = "random")
+# summary(sibling_re)
+# Examine random effect for each household ID: ranef(sibling_re)
+
+# Summarize in a table
+stargazer(sibling_ols, sibling_fe, sibling_re, 
+          type = "latex",
+          star.char = c("*", "**", "***"),
+          star.cutoffs = c(0.1, 0.05, 0.01),
+          column.labels = c("OLS", "Fixed Effects", "Random Effects"),
+          dep.var.labels.include = FALSE)
+
+```
+
+**2.[3pts] Interpret the coefficient of `stress` in the OLS model.**  
+
+  In the OLS model, the coefficient of "stress" is -0.660. It means that holding others at constant, mother experiencing stress during pregnancy has a negative effect on the child's birth weight by a decrease of 0.66 pound. And this effect is statistically significant at the $p<0.01$ level.
+
+**3.[3pts] Interpret the coefficient of `stress` in the fixed effects model.**  
+  
+  In the fixed effects model, the coefficient of stress is -0.642. It means that holding others at constant, *within a household*, mother experiencing stress during pregnancy has a negative effect on the child's birth weight by a decrease of 0.642 pound. And this effect is statistically significant at the $p<0.01$ level.  
+  
+**4.[3pts] Interpret the coefficient of `magebirth` in the fixed effects model.**  
+  
+  In the fixed effects model, the coefficient of "magebirth" is 0.049. It means that holding others at constant, *within a household*, one unit increase in mother's age at birth has a positive effect on the child's birth weight by an increase of 0.049 pound. And this effect is statistically significant at the $p<0.01$ level.
+
+**5.[4pts] Perform a F-test to compare the OLS and the fixed effects models and interpret outputs (use `pFtest` from the `plm` R package).**  
+
+```{r }
+
+pFtest(sibling_fe, sibling_ols)
+
+```
+  
+  The F-test tests against the null hypothesis that the OLS model is better than the fixed effects model. The result of the F-test gives a p-value smaller than 0.05, meaning that the null hypothesis is rejected, i.e. the fixed effects model is better than the OLS model in explaining the variance in the outcome variable. 
+
+
+**6.[4pts] Compared to an OLS model, what are the benefits of using a fixed effects model?**  
+
+  In a fixed-effect model, unchanging characteristics of the household, both measured and unmeasured, are controlled so that the result estimates the effect of the predictors while controlling for potential household-level confounders, such as family income, poverty status, etc. Compared to an OLS model, fixed effects models tease out all the household-level confounders without the need to explicitly specify every possible predictors in the model. 
+
+**7.[4pts] Why don’t we get coefficients of `meduy`, `feduy`, and `numsibling` in the fixed effects model?**  
+  
+  The fixed effects model only estimates the *within-household effect* of individual-level variables on the outcome variable. There are no coefficients of "meduy", "feduy", and "numsibling" because they and other unmeasured household-level characteristics are net out from (and also not estimated in) the fixed-effect model. 
+  
+**8.[4pts] Why do we get coefficients of `meduy`, `feduy`, and `numsibling` in the random effects (random intercepts) model?**  
+
+  For the random effects model, both household-variant and household-invariant variables are considered in the model. The household-level covariants are used to estimate the individual random intercepts, whereas the individual-level, household-invariant covariants are used to estimate the rest part of the model. Therefore there are coefficients for "meduy", "feduy", and "numsibling" in the random effects model.
+
+**9.[4pts] How does the coefficient of `stress` change between (a) the OLS model and the fixed effects model and (b) the OLS model and the random effects model? What could be the potential causes that lead to these changes?**  
+
+  The reason from the (a) and (b) are quite similar. First, from the OLS model to the fixed effects model, the effect size of maternal stress on birth weight decreases slightly, with their confidence intervals having some overlap. This decrease is most likely caused by the controlling for some unmeasured household-level confounders in the fixed effects model. For example, household poverty is not measured in the data, and it may negatively correlated with birth weight and positively correlated with stress. In the fixed-effect model, the effect of poverty is controlled for, whereas in the OLS model, the effect of poverty may be picked up by stress, leading to an increase in the effect size of stress.  
+  
+  Similarly, this explains why the effect size of stress also decreases slightly from the OLS model to the random-effect model.  
+
+**10.[6pts] Perform a Hausman test to compare fixed-effects and random-effects models (figure out how to use the `phtest` function from the `plm` R package; you might look into the help page and examples by typing ?plm::phtest into your console)**  
+
+```{r }
+
+phtest(sibling_fe, sibling_re)
+
+```
+  
+  **(a) What is the null hypothesis of this model? What is the alternative hypothesis?**  
+  
+  The null hypothesis is that both the fixed effects estimator and the random effects estimator are consistent but that the random effects estimator is in addition *efficient*. Notice that this will be the case if the individual-level error term is uncorrelated with the predictors in the model.  
+  
+  The alternative hypothesis is that the random effects estimator is inconsistent (notice the assumption that the fixed estimator is still consistent; thus you are comparing two estimators where you "know" that one is consistent and you have doubts about the consistency of the the random effects estimator).
+  
+  **(b) Is the null hypothesis rejected? Based on the test, which model would you use?**  
+  
+  The Chi-squared statistics is 1.6002 on 4 degree-of-freedom. The p-value of the test is not smaller than 0.05, one cannot reject the null hypothesis that both estimators are consistent. Hence, in this situation the random effects estimator would be the model to use.  
+  
+  
+
+# Part 3 Data Transformation
+
+[15pts] Import \texttt{parent\_inc.csv} to your R environment. The data frame looks like this: 
+
+\begin{table}[!h]
+\centering
+\begin{tabular}{|ccccc|}
+\hline
+famid & father\_name & mother\_name & father\_income & mother\_income \\ \hline
+1     & Arthur       & Jess         & 42000          & 45000          \\
+2     & Harry        & Pam          & 35000          & 24000          \\
+3     & Matt         & Mary         & 78000          & 55000          \\ \hline
+\end{tabular}
+\end{table}
+
+\noindent Use either \texttt{tidyverse} functions with the piping syntax or the \texttt{data.table} functions (\texttt{dcast} and \texttt{melt}) to transform the data frame to the following structure: 
+
+\begin{table}[!h]
+\centering
+\begin{tabular}{|cccc|}
+\hline
+famid & type   & name   & income \\ \hline
+1     & father & Arthur & 42000  \\
+1     & mother & Jess   & 45000  \\
+2     & father & Harry  & 35000  \\
+2     & mother & Pam    & 24000  \\
+3     & father & Matt   & 78000  \\
+3     & mother & Mary   & 55000 \\ \hline
+\end{tabular}
+\end{table}
+
+\noindent Make sure to document the steps you take in your code and display the tidied data frame in your PDF document.
+
+\vspace{3mm}
+
+\noindent \textit{Hints}: 
+\begin{itemize}
+    \item You can use \texttt{str\_remove()} or \texttt{str\_extract()} functions for mutating a new variable that extracts part of the text from a string, for example extracting ``father" from ``father\_name".
+    \item You can format tables using \texttt{kbl()} from the \texttt{kableExtra} package.
+\end{itemize}
+
+  - **Solution**: Use `pivot_longer()` to bring out `father_name` and `mother_name`, then use `ifelse()` to assign value to a new variable called `income` that equals to the value in `fincome` when detect "father" in `type`, otherwise equals to the value in `mincome`. (We haven't covered `ifelse()` yet, but you can read its documentation in R and run the examples in the documentation to learn how to use it.)
+  
+```{r q2 method1}
+
+parent_inc <- read.csv("parent_inc.csv")
+
+parent_inc %>%
+  pivot_longer(c(father_name, mother_name), 
+               names_to = "type", 
+               values_to = "name") %>%
+  mutate(income = ifelse(type == "father_name", fincome, mincome),
+         type = str_remove(type, "_name")) %>%
+  dplyr::select(famid, type, name, income) %>%
+  kbl(booktabs = T) %>%
+  kable_styling(position = "center")
+
+```

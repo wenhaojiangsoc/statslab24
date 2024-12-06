@@ -1,0 +1,25 @@
+{
+    "id": "8FA197A9",
+    "path": null,
+    "project_path": null,
+    "type": "object_explorer",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1669923361098.0,
+    "source_on_save": false,
+    "relative_order": 3,
+    "properties": {
+        "id": "674f83d3a695462bad32740ad2400fd5",
+        "name": "common_support",
+        "title": "common_support"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 4529818864,
+    "encoding": "",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1669923361098,
+    "read_only": false,
+    "read_only_alternatives": []
+}

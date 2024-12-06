@@ -1,0 +1,339 @@
+---
+title: "SOC-GA 2332 Intro to Stats Lab 13"
+date: "12/6/2024"
+output:
+  pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = F, message = F)
+
+## import packages
+library(tidyverse)
+library(data.table)
+library(stargazer)
+library(MatchIt)
+library(PSweight)
+library(AER)
+library(ggpubr)
+library(haven)
+
+options(scipen = 999)
+```
+
+# Part 0: Logistics
+
+* Assignment 4 due on Dec. 20th, 11:59pm
+
+# Part 1: Matching
+
+* For the following parts on causal inference, we will use the Early Childhood Longitudinal Study dataset. 
+
+* We will examine the effect of going to a Catholic school (`catholic = 1`), as opposed to a public school (`catholic = 0`), on students' standardized math score (`c5r2mtsc_std`). The pre-treatment covariates are:  
+    * `race_white`: Is the student white (1) or not (0)?  
+    * `p5hmage`: Mother’s age  
+    * `w3income`: Family income  
+    * `p5numpla`: Number of places the student has lived for at least 4 months  
+    * `w3momed_hsb`: Is the mother’s education level high-school or below (1) or some college or more (0)?  
+
+```{r import data, warning=FALSE, message=FALSE}
+## import data
+ecls <- read.csv("data/ecls.csv")
+
+## covariates variable name vector
+ecls_cov <- c('race_white', 'p5hmage', 'w3income', 'p5numpla', 'w3momed_hsb')
+```
+
+## Check if sample is balanced
+
+* To check if the sample is balanced or not, we first examine the difference in means by treatment status for outcome variable and covariates.
+* As we can see, the difference in mean for math score and for covariates are statistically significant.  
+
+```{r balance before matching, warning=FALSE}
+
+## check difference in mean outcomes by school type
+ecls %>%
+  group_by(catholic) %>%
+  summarise(n_students = n(),
+            mean_math = mean(c5r2mtsc_std),
+            std_error_math = sd(c5r2mtsc_std) / sqrt(n_students))
+
+## two Sample t-test: (H0: mean math scores do not differ by school types)
+with(ecls, t.test(c5r2mtsc_std ~ catholic))
+
+## check difference in means for pre-treatment covariates by school types
+## summarise group means for covariates
+ecls %>%
+  group_by(catholic) %>%
+  select(one_of(ecls_cov)) %>%
+  summarise_all(funs(mean(., na.rm = T)))
+
+## Two sample t-test for every covariate
+## lapply: a build-in loop that apply the t-test function along the name vector
+lapply(ecls_cov, function(v){
+  t.test(ecls[, v] ~ ecls[, 'catholic'])
+})
+```
+
+## Choose and execute a matching algorithm  
+
+* To create a balanced sample from the original, unbalanced dataset, we need to choose and execute a matching algorithm in order to created a balanced dataset to estimate ATE. The package `MatchIt` estimates the propensity score in the background and then matches observations based on the method of your choice. 
+
+* In this example we use ***nearest neighbor*** matching, which matches units based on some measure of distance. The default and most common measure is the propensity score difference, which is the difference between the propensity scores of each treated and control unit.  
+
+```{r matching, warning=FALSE}
+
+## MatchIt does not allow missing values, so we need to remove observations with NAs
+ecls_nomiss <- ecls %>%  
+  select(c5r2mtsc_std, catholic, all_of(ecls_cov)) %>%
+  na.omit()
+
+## nearest neighbor matching (see documentation for different matching methods)
+mod_match <- matchit(catholic ~ race_white + w3income + p5hmage + p5numpla + w3momed_hsb,
+                     method = "nearest", 
+                     estimand = "ATT",
+                     data = ecls_nomiss)
+```
+
+## Create matched dataset  
+
+* Using the `matchit` function, we obtained a `matchit` object (`mod_match`) that can be used to create a dataframe that contains only the matched observations.  
+  * Note that in our case, this final dataset is smaller than the original: it contains 2,704 observations, which contains 1,352 original treated units, and the other 1,352 control units that match the treated units one on one. 
+  * The estimated effect is therefore ATT.
+  * The final dataset contains a variable called `distance`, which is the propensity score.
+  * Matching ideally requires a common support in propensity.
+
+```{r matched dataset, warning=FALSE}
+## to create a dataframe containing only the matched observations
+dta_m <- match.data(mod_match)
+```
+
+## Examine covariates after matching  
+
+* After matching, it is useful to plot the mean of each covariate against the estimated propensity score, color-coded by treatment status. If matching is done well, the treatment and control groups will have (near) identical means of each covariate at each value of the propensity score.
+
+```{r plot covariate distribution, message=FALSE, warning=FALSE}
+
+## a plotting function that plots the distribution of propensity score of a given covariate
+fn_bal <- function(dta, variable, yname) {
+  dta$variable <- dta[, variable]
+  if (variable == 'w3income') {
+    dta$variable <- dta$variable / 10^3
+    }
+  dta$catholic <- as.factor(dta$catholic)
+  support <- c(min(dta$variable), max(dta$variable))
+  plot <- ggplot(dta, aes(x = distance, y = variable, color = catholic)) +
+    geom_point(alpha = 0.1, size = 1.3) +
+    geom_smooth(method = "loess", se = F) +
+    scale_color_manual(values=c("orange", "blue")) +
+    xlab("Propensity score") +
+    ylab(yname) +
+    theme_bw() +
+    ylim(support)
+  
+  return(plot)
+}
+
+## plot and arrange the plots
+ggarrange(
+  fn_bal(dta_m, "w3income", "Family Income"),
+  fn_bal(dta_m, "p5numpla", "Num Places Lived"),
+  fn_bal(dta_m, "p5hmage", "Mother Age"),
+  fn_bal(dta_m, "w3momed_hsb", "Mom Edu HS or Less"),
+  fn_bal(dta_m, "race_white", "Race is White"),
+  common.legend = T,
+  legend = "bottom")
+
+
+## you can also check difference-in-means in matched data
+dta_m %>%
+  group_by(catholic) %>%
+  select(one_of(ecls_cov)) %>%
+  summarise_all(funs(mean))
+
+## two sample t-test
+lapply(ecls_cov, function(v) {
+  t.test(dta_m[, v] ~ dta_m$catholic)
+})
+
+
+```
+
+## Estimate Treatment Effects
+
+* Using matched dataset, we can now estimate ATT using two different methods. 
+  * We can either use the results of a two sample t-test and calculate the difference in means
+  * or regress mean math score on school types
+    * Note that since we are using the matched dataset, the distribution of the covariates, in our case, are balanced in both the treatment and control group
+    * Therefore, whether control variables are included or not in the linear model, in our case, would not affect the ATT estimate
+
+```{r ATE estimate}
+## 1. two sample t-test
+with(dta_m, t.test(c5r2mtsc_std ~ catholic))
+## mean in group 0: 0.3673451 
+## mean in group 1: 0.2096679 
+## ATT = 0.2096679 - 0.3673451 = -0.1576772
+
+## 2. OLS model
+## no covariates
+lm_treat1 <- lm(c5r2mtsc_std ~ catholic, data = dta_m)
+## with covariates
+lm_treat2 <- lm(c5r2mtsc_std ~ catholic + race_white + p5hmage +
+                  I(w3income / 10^3) + p5numpla + w3momed_hsb, data = dta_m)
+## display models
+stargazer(lm_treat1, lm_treat2, type="text",
+          star.char = c("+", "*", "**", "***"),
+          star.cutoffs = c(0.1, 0.05, 0.01, 0.001))
+```
+
+# Part 2: Propensity Score
+
+* This part will demonstrate how to create propensity score
+* Recall that propensity score is the probability of being treated given a set of pre-treatment covariates. 
+* In `R`, we can estimate propensity score given the covariates by fitting a logistic regression with the treatment status as the outcome and covariates as predictors.  
+  * We still leverage the strong ignorability assumption and correct specification assumption to derive an unbiased estimate of the true propensity score.
+
+```{r propensity score, warning=FALSE}
+## rescale income
+ecls <- ecls %>% mutate(w3income_1k = w3income/1000)
+
+## fit a logistic regress to generate propensity score using covariates
+m_ps <- glm(catholic ~ race_white + w3income_1k + p5hmage + p5numpla + w3momed_hsb,
+            family = binomial(), data = ecls) 
+summary(m_ps)
+
+## use above model to generate propensity 
+## (the probability of being treated given a set of pre-treatment covariates)
+prs_df <- data.frame(pr_score = predict(m_ps, type = "response"),
+                     catholic = m_ps$model$catholic)
+
+## check the region of common support
+## in every unit in the treatment, is there a control unit
+prs_df %>% 
+  ggplot(aes(x = pr_score, fill = as.factor(catholic))) + 
+  geom_histogram(binwidth = 0.02, alpha = 0.5, position="identity") +
+  ggtitle("Probability of Going to Catholic School") +
+  xlab("Propensity Score") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  scale_fill_manual(name=" ", 
+                    values = c("blue", "red"),
+                    labels = c("Non-Catholic", "Catholic")) 
+```
+
+# Part 3: Inverse probability weighting
+
+* Use propensity scores to weight units based on their probabilities of being treated. 
+* There are several options that measure different quantities of interest
+  * `IPW` measures ATE. $weight(w_1,w_0) = (\frac{1}{e(x)},\frac{1}{1-e(x)})$
+    * The core of `IPW` is to create a weighted treatment group and a weighted control group whose covariates' distribution resembles the distribution of the whole sample
+  * `treated` measures ATT. $weight(w_1,w_0) = (1,\frac{e(x)}{1-e(x)})$
+    * The core of `treated` is to create only a weighted control group whose covariates' distribution resembles the distribution of the unweighted treatment group 
+  * `overlap` measures ATO. $weight(w_1,w_0) = (1 - e(x),e(x))$
+    * The core of `overlap` is to give more weights to the observations near the center of the propensity, or the units under "equipoise"
+* You may check [this site](https://stats.stackexchange.com/questions/529602/which-one-of-these-methods-ate-att-ato-overlap-should-be-used-to-evaluate-a) for more detailed explanations    
+
+```{r matching algorithm, warning=FALSE}
+
+## matching algorithm
+ps.formula <- catholic ~ race_white + p5hmage +
+                  I(w3income / 10^3) + p5numpla + w3momed_hsb
+
+bal.ipw <- SumStat(ps.formula = ps.formula, zname ="catholic",
+weight = c("treated", "overlap", "IPW"), data = ecls_nomiss)
+
+# check balance by weight type 
+plot(bal.ipw)
+```
+
+* Estimate ATT, ATO, and ATE: 
+
+```{r estimate ATE by weighting, warning=FALSE}
+
+## average treatment effect among the treated population
+att <- PSweight(ps.formula = ps.formula, yname = "c5r2mtsc_std", data = ecls_nomiss, family = "gaussian",
+weight = "treated")
+
+## average treatment effect among the overlap population
+ato <- PSweight(ps.formula = ps.formula, yname = "c5r2mtsc_std", data = ecls_nomiss, family = "gaussian",
+weight = "overlap")
+
+## average treatment effect using IPW
+ate <- PSweight(ps.formula = ps.formula, yname = "c5r2mtsc_std", data = ecls_nomiss, family = "gaussian",
+weight = "IPW")
+
+## check results
+summary(att)
+summary(ate)
+```
+
+* Why is ATE and ATT different
+
+# Part 4: Instrumental Variables 
+  
+* We'll look at an example from [Causal Inference: The Mixtape](https://mixtape.scunning.com) by Scott Cunningham
+
+* In this example we use data from NLS Young Men Cohort of the National Longitudinal Survey to consider the returns to schooling in terms of income. Card (1995) wants to estimate:
+
+$$
+Y_{i} = \alpha + \beta_{1}S_{i} + \beta_{2}X_i + \epsilon_i
+$$
+
+  * where $Y$ is log earnings, $S$ is years of schooling, $X$ is a matrix of observed covariates and $epsilon$ is an error term containing unobserved endogenous covariates, for example, ability. Ability, we might expect, is correlated with income as well as years of schooling. Therefore schooling is biased. 
+
+* Card (1995) proposes an instrumental variables strategy and instruments schooling by a college-in-the-county dummy variable. The assumption is that if there is a nearby 4-year college, it will increase the likelihood of going to college. 
+
+## Estimating causal effects using IV designs 
+
+* One of the most common and intuitive estimators is two-stage least squares, with the instrument denoted as $Z_i$
+* We estimate the first-stage (Effect of college-in-county on years of schooling):
+
+$$
+S_{i}=\gamma+\rho Z_{i}+\eta X_i +u_{i}
+$$
+* And plug the fitted values into the second-stage regression: 
+
+$$
+Y_{i} = \alpha^{iv} + \beta_1^{iv} \hat{S}_{i} + \beta_2^{iv}X_i + v_{i}
+$$ 
+* This can be done manually in R by regressing with the predicted values, or using the `ivreg` function. 
+
+```{r IV estimate, warning=FALSE, message=FALSE}
+## function to read the data from github
+read_data <- function(df)
+{
+  full_path <- paste("https://raw.github.com/scunning1975/mixtape/master/", 
+                     df, sep = "")
+  df <- read_dta(full_path)
+  return(df)
+}
+
+## read data
+card <- read_data("card.dta")
+
+## define variable 
+## Endo = endogenous variable, Exo = exogenous variable, Inst = Instrument
+attach(card)
+Endo_educ <- educ
+Exo_ <- cbind(exper, black, south, married, smsa)
+Inst <- nearc4
+
+## OLS
+ols_reg <- lm(lwage ~ Endo_educ + Exo_)
+
+## 2SLS
+iv_reg <- ivreg(lwage ~ Endo_educ + Exo_ | Exo_ + Inst)
+
+## how coef estimates
+stargazer(ols_reg, iv_reg, type="text",
+          star.char = c("+", "*", "**", "***"),
+          star.cutoffs = c(0.1, 0.05, 0.01, 0.001))
+```
+
+* Recall that IV estimates are **LATE** 
+  * What can we infer about returns to schooling for compliers vs. always takers from the difference between the OLS estimate and the 2SLS estimate?
+  
+* Never-taker $S_i=0,\forall Z_i$
+* Always-taker $S_i=1,\forall Z_i$
+* Complier v.s. Defier
+  

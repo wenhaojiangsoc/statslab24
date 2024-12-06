@@ -1,0 +1,3 @@
+"0","# To create a dataframe containing only the matched observations"
+"0","dta_m <- match.data(mod_match)"
+"0",""

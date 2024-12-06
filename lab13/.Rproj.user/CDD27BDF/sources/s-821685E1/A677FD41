@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1620050410593.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2264490591",
+    "id" : "A677FD41",
+    "lastKnownWriteTime" : 1620184324,
+    "last_content_update" : 1620184324844,
+    "path" : "~/google_drive_nyu/r_and_git/intro_to_stats_2021/Lab12/Lab12.Rmd",
+    "project_path" : "Lab12.Rmd",
+    "properties" : {
+        "cursorPosition" : "40,3",
+        "ignored_words" : "covariates,dataset,dataframe,covariate,pre,Angrist,Sascha,Ludger,Woessmann,plough,px,br\n",
+        "last_setup_crc32" : "",
+        "scrollLine" : "33",
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

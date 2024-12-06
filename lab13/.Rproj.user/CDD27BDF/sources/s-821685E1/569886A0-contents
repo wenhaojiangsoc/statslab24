@@ -1,0 +1,11 @@
+library(MASS)
+
+c <- mvrnorm(n = 500, 
+        mu = c(0, 0),
+        Sigma = matrix(c(1, 0.1, 0.1, 1), 
+                       nrow = 2), 
+        empirical = TRUE)
+
+class(c)
+
+mvrnorm(n=10, mu = c(0,0,0), Sigma = diag(3))
